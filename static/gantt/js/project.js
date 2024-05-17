@@ -1,3 +1,4 @@
+
 /*
 TODO: Implement the mechanism of API requests. It is recommended to do it via:
 $('.nav-tabs a').on('shown.bs.tab', function(event){
@@ -39,7 +40,8 @@ var BaseFormEventHandler = function(selector) {
     this.dataFormName = 'data-form';
 }
 BaseFormEventHandler.prototype = Object.create(BaseHandler.prototype);
-BaseFormEventHandler.prototype.constructor = BaseFormEventHandler;
+BaseFormEventHandler.constructor = BaseFormEventHandler;
+
 
 BaseFormEventHandler.prototype.serializeData = function(context) {  
     var formData = new FormData();
@@ -49,10 +51,10 @@ BaseFormEventHandler.prototype.serializeData = function(context) {
         }
     }
     let isEmpty = true;
-    for (let pair of formData.entries()) {
-        isEmpty = false;
-        break;
-    }
+        for (let pair of formData.entries()) {
+            isEmpty = false;
+            break;
+        }
     if (isEmpty) {
         throw new Error('FormData is empty.');
     }
@@ -61,7 +63,7 @@ BaseFormEventHandler.prototype.serializeData = function(context) {
 
 BaseFormEventHandler.prototype.setupEventHandler = function() {
     var self = this;
-    $(this.element).on(this.e, function(event) {
+    $(this.element).on(this.e, (event) => {
         event.preventDefault();
         event = self.assignEvent(event);
         var context = self.getContextData(event);
@@ -70,25 +72,36 @@ BaseFormEventHandler.prototype.setupEventHandler = function() {
     });
 }
 
+
 BaseFormEventHandler.prototype.getContextData = function(event) {
+    /* 
+     * This function gets the context of the data being sent. Perhaps, I can use some html properties etc.
+    */
     var target = event.target;
     var fields = $(`.js-field[${this.dataFormName}="${$(target).attr(this.dataFormName)}"]`);
     console.debug(`.js-field[${this.dataFormName}="${$(target).attr(this.dataFormName)}"]`);
     var context = {};
-    fields.each(function() {
-        var field = $(this);
-        if (field.attr(BaseFormEventHandler.prototype.dataFieldName) === undefined) {
-            throw new Error('Data field is not defined.');
+    for (let field of fields) {
+        if ($(field).attr(this.dataFieldName) === undefined) {
+            throw new Error('Data field is not defined.')
         }
-        var fieldName = field.attr(BaseFormEventHandler.prototype.dataFieldName);
-        console.debug(field, fieldName);
-        if (field.attr('value') !== undefined) {
-            context[fieldName] = field.attr('value');
-        } else if (field.text() !== '') {
-            context[fieldName] = field.text();
-        }
-    });
+        var fieldName = $(field).attr(this.dataFieldName);
 
+        /*
+        ! Debug only
+        */
+        console.debug(field, fieldName);
+        if ($(field).attr('value') !== undefined) {
+            context[fieldName] = $(field).attr('value');
+        }
+        else if ($(target).text() !== '') {
+            context[fieldName] = $(field).text()
+        }
+    }
+
+    /*
+    ! Debug only
+    */
     console.debug(context);
     if (Object.entries(context).length === 0) {
         throw new Error('Context is not defined');
@@ -96,6 +109,7 @@ BaseFormEventHandler.prototype.getContextData = function(event) {
 
     return context;
 }
+
 
 /*
 * Abstract methods
@@ -113,11 +127,11 @@ function BaseEventHandler(selector, e) {
 }
 
 BaseEventHandler.prototype = Object.create(BaseHandler.prototype);
-BaseEventHandler.prototype.constructor = BaseEventHandler;
+BaseEventHandler.constructor = BaseEventHandler;
 
 BaseEventHandler.prototype.setupEventHandler = function() {
     var self = this;
-    $(this.element).on(this.e, function(event) {
+    $(this.element).on(this.e, (event) => {
         event.preventDefault();
         event = self.assignEvent(event);
         self.eventHandler(event);
@@ -144,9 +158,13 @@ function EditableEventHandler() {
 }
 
 EditableEventHandler.prototype = Object.create(BaseEventHandler.prototype);
-EditableEventHandler.prototype.constructor = EditableEventHandler;
+EditableEventHandler.constructor = EditableEventHandler;
 
 EditableEventHandler.prototype.eventHandler = function(event) {
+    /* 
+    ! BUG HERE: Gotta set cursor where is clicked but the cursor position in the beginning of the field
+    */
+
     var target = event.target;
     var buttonRelated = $(`.js-btn-editable[${this.dataFieldButtonName}='${$(target).attr(this.dataFieldName)}']`);
     console.log($(target).prop('contenteditable'))
@@ -155,6 +173,9 @@ EditableEventHandler.prototype.eventHandler = function(event) {
         $(target).focus();
         $(target).removeClass('d-none');
     }
+    /*
+    ! Debug only
+    */
     console.debug(`.js-btn-editable[${this.dataFieldButtonName}='${$(target).attr(this.dataFieldName)}']`);
     if (buttonRelated.length !== 0) {
         $(buttonRelated).removeClass('d-none');
@@ -171,12 +192,11 @@ function CancelEditableEventHandler() {
 }
 
 CancelEditableEventHandler.prototype = Object.create(BaseEventHandler.prototype);
-CancelEditableEventHandler.prototype.constructor = CancelEditableEventHandler;
+CancelEditableEventHandler.constructor = CancelEditableEventHandler;
 
 CancelEditableEventHandler.prototype.assignEvent = function(event) {
     return event;
 }
-
 CancelEditableEventHandler.prototype.eventHandler = function(event) {
     if ($(event.target).closest('.js-editable').length) {
         return;
@@ -190,11 +210,13 @@ CancelEditableEventHandler.prototype.eventHandler = function(event) {
             });
         }
     });
+
 }
 
 /*
  ****************************
 */
+
 
 function FieldFormEventHandler() {
     var selector = '.js-field-submit';
@@ -202,16 +224,19 @@ function FieldFormEventHandler() {
 
     this.dataFieldName = 'data-field';
     this.dataFieldSubmitName = 'data-related';
+    
 }
-
 FieldFormEventHandler.prototype = Object.create(BaseFormEventHandler.prototype);
-FieldFormEventHandler.prototype.constructor = FieldFormEventHandler;
+FieldFormEventHandler.constructor = FieldFormEventHandler;
 
 FieldFormEventHandler.prototype.eventHandler = function(event, data) {
-    console.debug(`FieldFormEventHandler.prototype.eventHandler: ${event.target}, ${data}`);
+    /*
+    ! Debug only
+    */
+   console.debug(`FieldFormEventHandler.prototype.eventHandler: ${event.target}, ${data}`);
 }
 
-$(document).ready(function() {
+$(document).ready(() => {
     var editableHandler = new EditableEventHandler();
     var cancelEditableEventHandler = new CancelEditableEventHandler();
     var fieldFormEventHandler = new FieldFormEventHandler();
@@ -219,4 +244,10 @@ $(document).ready(function() {
     cancelEditableEventHandler.setupEventHandler();
     fieldFormEventHandler.setupEventHandler();
     console.log('hi');
+    /*
+    $(document).on('mousedown', (event) => cancelEditing(event));
+    projectNameEditable.click((event) => projectNameShowHandler(event));
+    projectNameButton.click((event) => projectNameHandler(event));
+    */
+    
 });
