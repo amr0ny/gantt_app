@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %} Gantt app {% endblock %}
+{% load static %}
+{% block styles %}
+<link rel="stylesheet" type="text/css" href="{% static 'gantt/css/project.css' %}">
+{% endblock %}
+{% block content %}
+    <div class="d-flex container-fluid h-100 w-100 m-0 p-0">
+        <div class="nav sidebar p-15 h-100 flex-column bg-primary">
+            <li class="nav-item clickable">
+                <div class="nav-link text-white" id="js-sidebar-createproject">Создать проект</div>
+            </li>
+            <li class="nav-item clickable">
+                <div class="nav-link text-white" id="js-sidebar-allprojects">Все проекты</div>
+                </li>
+            <li class="nav-item clickable">
+                <div class="nav-link text-white" id="js-sidebar-mytasks">Мои задачи</div>
+            </li>
+        </div>
+        <div class="flex-fill p-3 h-100">
+            <div class="header-head">
+                <!-- TODO js: script add contenteditable="true" and check mark button -->
+                <div class="container-fluid row">
+                    <div class="col align-items-center d-flex justify-content-start flex-row">
+                        <div class="project-name p-2 d-flex">
+                            <!-- TODO: To fill the value with actual one in js -->
+                            <div class="clickable js-editable js-field p-1" data-field="project-name" data-form="project-name">Project 1</div>
+                            <button class="js-btn-editable btn btn-sm btn-primary d-none js-field-submit" data-form="project-name" data-related="project-name"><i class="fa fa-check"></i></button>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn list-group-item-success dropdown-toggle" type="button" data-toggle="dropdown">По графику
+                            <span class="caret"></span></button>
+                            <ul class="dropdown-menu">
+                                <!-- TODO: Add proper styles-->
+                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">None</li>
+                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success">По графику</li>
+                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Просрочен</li>
+                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Под угрозой</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col d-flex justify-content-end flex-row">
+                        <div class="role-container">
+                            <!-- * Perhaps I will do something with the style -->
+                            <span class="badge badge-light p-3">Владелец проекта</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- TODO: I gotta add tips for some navbar elements -->
+            <div class="navbar">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active js-navbar-item" data-toggle="tab" href="#js-navbar-chart-tab">Диаграмма</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link js-navbar-item" data-toggle="tab" href="#js-navbar-members-tab">Люди</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="main-content tab-content">
+                <!-- TODO: Gotta implement API request and tab loading-->
+                <div id="js-navbar-chart-tab" class="container tab-pane active"><br>
+                    <h3>Chart details</h3>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <!-- <div class="chart-table"></div> -->
+                    <!-- <div class="gantt-chart"></div> -->
+                </div>
+                <div id="js-navbar-members-tab" class="container tab-pane fade"><br>
+                    <h3>Team members details</h3>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>  
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="{% static 'gantt/js/project.js' %}"></script>
+{% endblock %}
