@@ -38,7 +38,8 @@
 
 
 .gantt-chart-container {
-    
+    flex: 1;
+    overflow: hidden;
     padding: 0 !important;
     width: 1600px;
 }
@@ -72,11 +73,11 @@
 
     overflow-y: scroll;
     flex: 1;
-    height: 100px;
+    max-height: 600px;
 }
 
 .gantt-chart-data-area {
-    height: 2000px;
+    height: auto;
 }
 
 .task-row {
