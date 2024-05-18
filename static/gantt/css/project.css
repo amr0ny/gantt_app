@@ -73,7 +73,7 @@
 
     overflow-y: scroll;
     flex: 1;
-    max-height: 600px;
+    max-height: calc(100vh - 218px);
 }
 
 .gantt-chart-data-area {
