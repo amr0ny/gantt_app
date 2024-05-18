@@ -17,61 +17,104 @@
                 <div class="nav-link text-white" id="js-sidebar-mytasks">Мои задачи</div>
             </li>
         </div>
-        <div class="flex-fill p-3 h-100">
-            <div class="header-head">
-                <!-- TODO js: script add contenteditable="true" and check mark button -->
-                <div class="container-fluid row">
-                    <div class="col align-items-center d-flex justify-content-start flex-row">
-                        <div class="project-name p-2 d-flex">
-                            <!-- TODO: To fill the value with actual one in js -->
-                            <div class="clickable js-editable js-field p-1" data-field="project-name" data-form="project-name">Project 1</div>
-                            <button class="js-btn-editable btn btn-sm btn-primary d-none js-field-submit" data-form="project-name" data-related="project-name"><i class="fa fa-check"></i></button>
+        <div class="main-content-wrapper d-flex flex-column container-fluid">
+            <div class="d-flex flex-column p-3 h-100 w-100">
+                <div class="header-head">
+                    <!-- TODO js: script add contenteditable="true" and check mark button -->
+                    <div class="container-fluid row">
+                        <div class="col align-items-center d-flex justify-content-start flex-row">
+                            <div class="project-name p-2 d-flex">
+                                <!-- TODO: To fill the value with actual one in js -->
+                                <div class="clickable js-editable js-field p-1" data-field="project-name" data-form="project-name">Project 1</div>
+                                <button class="js-btn-editable btn btn-sm btn-primary d-none js-field-submit" data-form="project-name" data-related="project-name"><i class="fa fa-check"></i></button>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn list-group-item-success dropdown-toggle" type="button" data-toggle="dropdown">По графику
+                                <span class="caret"></span></button>
+                                <ul class="dropdown-menu">
+                                    <!-- TODO: Add proper styles-->
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">None</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success">По графику</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Просрочен</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Под угрозой</li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="dropdown">
-                            <button class="btn list-group-item-success dropdown-toggle" type="button" data-toggle="dropdown">По графику
-                            <span class="caret"></span></button>
-                            <ul class="dropdown-menu">
-                                <!-- TODO: Add proper styles-->
-                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">None</li>
-                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success">По графику</li>
-                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Просрочен</li>
-                                <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Под угрозой</li>
-                            </ul>
+                        <div class="col d-flex justify-content-end flex-row">
+                            <div class="role-container d-flex align-items-center">
+                                <!-- * Perhaps I will do something with the style -->
+                                <span class="badge badge-light p-3">Владелец проекта</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="col d-flex justify-content-end flex-row">
-                        <div class="role-container">
-                            <!-- * Perhaps I will do something with the style -->
-                            <span class="badge badge-light p-3">Владелец проекта</span>
+                </div>
+                <!-- TODO: I gotta add tips for some navbar elements -->
+                <div class="navbar">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active js-navbar-item" data-toggle="tab" href="#js-navbar-chart-tab">Диаграмма</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link js-navbar-item" data-toggle="tab" href="#js-navbar-members-tab">Люди</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex-fill d-flex main-content tab-content">
+                    <!-- TODO: Gotta implement API request and tab loading-->
+                    <div id="js-navbar-chart-tab" class="container tab-pane active">
+                        <div class="d-flex chart-wrapper h-100">
+                            <div class="card h-100 chart-table js-resizable"></div>
+                            <div class="flex-fill gantt-chart card">
+                                <div class="container-fluid gantt-chart-container d-flex flex-column">
+                                    <div class="row gantt-chart__header-container header-container">
+                                        <!-- TODO: Further, I gotta replace it with the JS to update this columns comnining with API endpoint sending data of mounths-->
+                                        <div class="header-container__item col">Май</div>
+                                        <div class="header-container__item col">Июнь</div>
+                                    </div>
+                                    <div class="row gantt-chart__header-container header-container">
+                                        <div class="header-container__item col">
+                                            <!-- ! This is just a sample of numbers to imitate real behavior -->
+                                            <div class="row">
+                                                {% with ''|center:31 as range %}
+                                                    {% for _ in range %}
+                                                        <div class="header-container__item col">{{ forloop.counter }}</div>
+                                                    {% endfor %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                        <div class="header-container__item col">
+                                            <div class="row">
+                                                {% with ''|center:30 as range %}
+                                                    {% for _ in range %}
+                                                        <div class="header-container__item col">{{ forloop.counter }}</div>
+                                                    {% endfor %}
+                                                {% endwith %}
+                                            </div>
+                                  
+                                        </div>
+                                    </div>
+                                    <div class="gantt-chart-data-wrapper">
+                                        <div class="gantt-chart-data-area">
+                                            {% with ''|center:30 as range %}
+                                                {% for _ in range %}
+                                                <div class="row gantt-chart__task-row task-row"></div>
+                                                {% endfor %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                    <div id="js-navbar-members-tab" class="container tab-pane fade">
+                        <h3>Team members details</h3>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>  
                     </div>
                 </div>
             </div>
-            <!-- TODO: I gotta add tips for some navbar elements -->
-            <div class="navbar">
-                <ul class="nav nav-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active js-navbar-item" data-toggle="tab" href="#js-navbar-chart-tab">Диаграмма</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link js-navbar-item" data-toggle="tab" href="#js-navbar-members-tab">Люди</a>
-                    </li>
-                </ul>
-            </div>
-            <div class="main-content tab-content">
-                <!-- TODO: Gotta implement API request and tab loading-->
-                <div id="js-navbar-chart-tab" class="container tab-pane active"><br>
-                    <h3>Chart details</h3>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                    <!-- <div class="chart-table"></div> -->
-                    <!-- <div class="gantt-chart"></div> -->
-                </div>
-                <div id="js-navbar-members-tab" class="container tab-pane fade"><br>
-                    <h3>Team members details</h3>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>  
-                </div>
-            </div>
+            <div class="footer"></div>
         </div>
     </div>
 <script src="{% static 'gantt/js/project.js' %}"></script>
+<script src="{% static 'gantt/js/resizable.js' %}"></script>
 {% endblock %}

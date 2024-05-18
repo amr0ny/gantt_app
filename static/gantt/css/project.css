@@ -1,9 +1,12 @@
 .sidebar {
     padding: 10px;
-    width: 180px;
+    width: 220px;
     box-shadow: 0px 9px 22px -2px rgba(0, 0, 0, 0.2);
 }
 
+.main-content-wrapper {
+    padding: 0 !important;
+}
 .clickable {
     cursor: pointer;
 }
@@ -11,4 +14,79 @@
 .dropdown-menu__item:hover {
     background: #f8f9fa;
     user-select: none;
+}
+
+.chart-table {
+    width: 400px;
+}
+
+.card.gantt-chart {
+    border-left: 0;
+}
+.gantt-chart {
+    overflow-x: scroll;
+    box-sizing: border-box;
+    width: 100px;
+    flex: 1;
+}
+.js-resizable {
+    touch-action: none;
+    overflow: hidden;
+    touch-action: none;
+    box-sizing: border-box;
+}
+
+
+.gantt-chart-container {
+    padding: 0 !important;
+    width: 1600px;
+}
+
+.header-container {
+    display:flex;
+    flex-direction: row;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    background-color: #f8f9fa;
+}
+.gantt-chart .row {
+    margin: 0 !important;
+}
+.gantt-chart__header-container {
+    height: 20px;
+}
+
+.header-container__item {
+    text-align: center;
+    align-content: center;
+    border-right: 1px solid rgba(0,0,0,.125);
+    font-size: 12px;
+    padding: 0;
+}
+
+.header-container__item:last-child {
+    border-right: none;
+}
+
+.gantt-chart-data-wrapper {
+
+    overflow-y: scroll;
+    flex: 1;
+    height: 100px;
+}
+
+.gantt-chart-data-area {
+    height: 2000px;
+}
+
+.task-row {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.gantt-chart__task-row {
+    height: 30px;
+    
+}
+.footer {
+    border: solid 1px rgba(0, 0, 0, .125);
+    height: 40px;
 }
