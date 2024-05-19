@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from gantt.mixins import TimeStampedMixin, UUIDMixin
 
 
+# TODO: constraints which are essential
+
 class Person(AbstractUser):
     class Meta:
         db_table = "content\".\"person"
@@ -47,7 +49,7 @@ class Task(UUIDMixin, TimeStampedMixin):
         LOW = 'low'
         THE_LOWEST = 'the lowest'
     
-    
+    # TODO: Change field `color` to IntegerField and define method to get the color based on integer id
     name = models.CharField('name', max_length=255)
     status = models.TextField('status', choices=StatusChoices.choices)
     type = models.TextField('type', choices=TypeChoices.choices)

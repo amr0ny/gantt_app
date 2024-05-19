@@ -34,16 +34,16 @@ BaseHandler.prototype.setupEventHandler = function() {
  ****************************
 */
 
-var BaseFormEventHandler = function(selector) {
+var BasePOSTEventHandler = function(selector) {
     BaseHandler.call(this, selector, 'click submit');
     this.dataFieldName = 'data-field';
     this.dataFormName = 'data-form';
 }
-BaseFormEventHandler.prototype = Object.create(BaseHandler.prototype);
-BaseFormEventHandler.constructor = BaseFormEventHandler;
+BasePOSTEventHandler.prototype = Object.create(BaseHandler.prototype);
+BasePOSTEventHandler.constructor = BasePOSTEventHandler;
 
 
-BaseFormEventHandler.prototype.serializeData = function(context) {  
+BasePOSTEventHandler.prototype.serializeData = function(context) {  
     var formData = new FormData();
     for (let key in context) {
         if (context.hasOwnProperty(key)) {
@@ -61,7 +61,7 @@ BaseFormEventHandler.prototype.serializeData = function(context) {
     return formData;
 }
 
-BaseFormEventHandler.prototype.setupEventHandler = function() {
+BasePOSTEventHandler.prototype.setupEventHandler = function() {
     var self = this;
     $(this.element).on(this.e, (event) => {
         event.preventDefault();
@@ -73,7 +73,7 @@ BaseFormEventHandler.prototype.setupEventHandler = function() {
 }
 
 
-BaseFormEventHandler.prototype.getContextData = function(event) {
+BasePOSTEventHandler.prototype.getContextData = function(event) {
     /* 
      * This function gets the context of the data being sent. Perhaps, I can use some html properties etc.
     */
@@ -94,7 +94,7 @@ BaseFormEventHandler.prototype.getContextData = function(event) {
         if ($(field).attr('value') !== undefined) {
             context[fieldName] = $(field).attr('value');
         }
-        else if ($(target).text() !== '') {
+        else if ($(field).text() !== '') {
             context[fieldName] = $(field).text()
         }
     }
@@ -114,7 +114,7 @@ BaseFormEventHandler.prototype.getContextData = function(event) {
 /*
 * Abstract methods
 */
-BaseFormEventHandler.prototype.eventHandler = function(event, data) {
+BasePOSTEventHandler.prototype.eventHandler = function(event, data) {
     throw new Error('Abstract method must be implemented.');
 }
 
@@ -122,14 +122,14 @@ BaseFormEventHandler.prototype.eventHandler = function(event, data) {
  ****************************
 */
 
-function BaseEventHandler(selector, e) {
+var BaseDefaultEventHandler = function(selector, e) {
     BaseHandler.call(this, selector, e);
 }
 
-BaseEventHandler.prototype = Object.create(BaseHandler.prototype);
-BaseEventHandler.constructor = BaseEventHandler;
+BaseDefaultEventHandler.prototype = Object.create(BaseHandler.prototype);
+BaseDefaultEventHandler.constructor = BaseDefaultEventHandler;
 
-BaseEventHandler.prototype.setupEventHandler = function() {
+BaseDefaultEventHandler.prototype.setupEventHandler = function() {
     var self = this;
     $(this.element).on(this.e, (event) => {
         event.preventDefault();
@@ -138,26 +138,127 @@ BaseEventHandler.prototype.setupEventHandler = function() {
     });
 }
 
-/*
-* Abstract methods
-*/
-BaseEventHandler.prototype.eventHandler = function(event) {
-    throw new Error('Abstract method must be implemented.');
-}
 
 /*
  ****************************
 */
 
-function EditableEventHandler() {
+
+var BaseGETEventHandler = function(selector, e, bodySchema) {
+    this.bodySchema = bodySchema;
+    if (this.bodySchema === undefined) {
+        throw new Error('Abstract class field must be implemented.');
+    }
+    BaseHandler.call(this, selector, e);
+}
+
+BaseGETEventHandler.prototype = Object.create(BaseHandler.prototype);
+BaseGETEventHandler.constructor = BaseGETEventHandler;
+
+BaseGETEventHandler.prototype.validateSchema = function(object) {
+    if (typeof this.bodySchema !== 'object' || this.bodySchema === null) {
+        throw new Error('bodySchema must be an object');
+    }
+
+    // Проходимся по каждому ключу в схеме
+    for (let key in this.bodySchema) {
+        // Проверяем, есть ли такой ключ в объекте
+        if (!(key in object)) {
+            throw new Error(`${key} is missing in this.bodySchema: ${object}`);
+        }
+
+        // Проверяем тип значения ключа в объекте
+        const expectedType = this.bodySchema[key];
+        const actualType = typeof object[key];
+
+        if (expectedType === 'any') {
+            continue; // Пропускаем проверку типа, если тип any
+        }
+
+        if (actualType !== expectedType) {
+            throw new Error(`${key} must be a type of ${expectedType}`);
+        }
+    }
+    return this.bodySchema;
+}
+
+BaseGETEventHandler.prototype.setupEventHandler = function() {
+    var self = this;
+    $(this.element).on(this.e, (event) => {
+        event.preventDefault();
+        event = self.assignEvent(event);
+        dataRequest = self.requestData(event);
+        data = self.validateSchema(dataRequest);
+        self.eventHandler(event, data);
+    });
+}
+
+BaseGETEventHandler.prototype.requestData = function(event) {
+    throw new Error('Abstract method must be implemented.');
+}
+
+BaseGETEventHandler.prototype.eventHandler = function(event, data) {
+    throw new Error('Abstract method must be implemented.');
+}
+
+
+/*
+ ****************************
+*/
+
+
+var BaseDocumentEventHandler = function(e, bodySchema) {
+    var selector = document;
+    BaseGETEventHandler.call(this, selector, e, bodySchema);
+}
+
+BaseDocumentEventHandler.prototype = Object.create(BaseGETEventHandler.prototype);
+BaseDocumentEventHandler.constructor = BaseDocumentEventHandler;
+
+
+BaseDocumentEventHandler.prototype.assignEvent = function(event) {
+    return event;
+}
+
+
+/*
+ ****************************
+*/
+
+
+var BaseDocumentReadyHandler = function(bodySchema) {
+    BaseDocumentEventHandler.call(this, '', bodySchema);
+}
+
+BaseDocumentReadyHandler.prototype = Object.create(BaseDocumentEventHandler.prototype);
+BaseDocumentReadyHandler.constructor = BaseDocumentReadyHandler;
+
+
+BaseDocumentReadyHandler.prototype.setupEventHandler = function() {
+    var self = this;
+    $(this.element).ready((event) => {
+        event.preventDefault();
+        event = self.assignEvent(event);
+        dataRequest = self.requestData(event);
+        data = self.validateSchema(dataRequest);
+        self.eventHandler(event, data);
+    });
+}
+
+
+/*
+ ****************************
+*/
+
+var EditableEventHandler = function() {
     const selector = '.js-editable';
-    BaseEventHandler.call(this, selector, 'click');
+    BaseDefaultEventHandler.call(this, selector, 'click');
 
     this.dataFieldName = 'data-field';
     this.dataFieldButtonName = 'data-related';
 }
 
-EditableEventHandler.prototype = Object.create(BaseEventHandler.prototype);
+EditableEventHandler.prototype = Object.create(BaseDefaultEventHandler.prototype);
 EditableEventHandler.constructor = EditableEventHandler;
 
 EditableEventHandler.prototype.eventHandler = function(event) {
@@ -186,30 +287,70 @@ EditableEventHandler.prototype.eventHandler = function(event) {
  ****************************
 */
 
-function CancelEditableEventHandler() {
-    var selector = document;
-    BaseEventHandler.call(this, selector, 'mousedown');
+var CancelEditableEventHandler = function() {
+    /*
+    ! Debug only
+    */
+    var bodySchema = {
+        field: 'string',
+    }
+
+    BaseDocumentEventHandler.call(this, 'mousedown', bodySchema);
 }
 
-CancelEditableEventHandler.prototype = Object.create(BaseEventHandler.prototype);
+
+CancelEditableEventHandler.prototype = Object.create(BaseDocumentEventHandler.prototype);
 CancelEditableEventHandler.constructor = CancelEditableEventHandler;
 
-CancelEditableEventHandler.prototype.assignEvent = function(event) {
-    return event;
+/*
+! Debug only
+*/
+CancelEditableEventHandler.prototype.requestData = function(event) {
+    return;
 }
-CancelEditableEventHandler.prototype.eventHandler = function(event) {
+
+/*
+! Debug only
+*/
+CancelEditableEventHandler.prototype.validateSchema = function(dataRequest) {
+    return;
+}
+
+CancelEditableEventHandler.prototype.eventHandler = function(event, data) {
     if ($(event.target).closest('.js-editable').length) {
         return;
     }
+    $('.js-btn-editable').addClass('d-none');
+    $('.js-editable').prop('contenteditable', false);
+}
 
-    $('.js-btn-editable').each(function() {
-        if (!$(event.target).closest(this).length) {
-            $(this).addClass('d-none');
-            $('.js-editable').each(function() {
-                $(this).prop('contenteditable', false);
-            });
-        }
+
+/*
+ ****************************
+*/
+
+
+var EditableFieldFormEvent = function() {
+    var selector = '.js-field-submit';
+    BasePOSTEventHandler.call(this, selector, 'click submit');
+
+    this.dataFieldName = 'data-field';
+    this.dataFieldSubmitName = 'data-related';
+    
+}
+EditableFieldFormEvent.prototype = Object.create(BasePOSTEventHandler.prototype);
+EditableFieldFormEvent.constructor = EditableFieldFormEvent;
+
+EditableFieldFormEvent.prototype.eventHandler = function(event, data) {
+    /*
+    ! Debug only
+    */
+    var target = event.target;
+    $(target).addClass('d-none');
+    $('.js-editable').each((item) => {
+        $(item).prop('contenteditable', false);
     });
+    console.debug(`EditableFieldFormEventHandler.prototype.eventHandler: ${event.target}, ${data}`);
 
 }
 
@@ -217,33 +358,49 @@ CancelEditableEventHandler.prototype.eventHandler = function(event) {
  ****************************
 */
 
+var GridLayoutLoader = function() {
+    var bodySchema = {
+        start_date: Date(2024, 4, 18, 12, 30, 0),
+        end_date: Date(2024, 6, 18, 30, 0),
+    }
 
-function FieldFormEventHandler() {
-    var selector = '.js-field-submit';
-    BaseFormEventHandler.call(this, selector, 'click submit');
+    BaseDocumentReadyHandler.call(this, bodySchema);
+    this.gridLayoutMonthsElement = $('.js-grid-layout-months');
+    this.gridLayoutDaysElement = $('.js-grid-layout-days');
 
-    this.dataFieldName = 'data-field';
-    this.dataFieldSubmitName = 'data-related';
-    
+    if (this.gridLayoutMonthsElement.length === 0 || this.gridLayoutDaysElement.length === 0) {
+        throw new Error('Some of grid layout elements were not found')
+    }
 }
-FieldFormEventHandler.prototype = Object.create(BaseFormEventHandler.prototype);
-FieldFormEventHandler.constructor = FieldFormEventHandler;
 
-FieldFormEventHandler.prototype.eventHandler = function(event, data) {
-    /*
-    ! Debug only
-    */
-   console.debug(`FieldFormEventHandler.prototype.eventHandler: ${event.target}, ${data}`);
+GridLayoutLoader.prototype = Object.create(BaseDocumentReadyHandler.prototype);
+GridLayoutLoader.constructor = GridLayoutLoader;
+
+/*
+! Debug only
+*/
+GridLayoutLoader.prototype.requestData = function(event) {
+    return this.bodySchema;
 }
+/*
+! Debug only
+*/
+GridLayoutLoader.prototype.validateSchema = function(dataRequest) {
+    return dataRequest;
+}
+
+GridLayoutLoader.prototype.eventHandler = function(event, data) {
+        
+}
+
 
 $(document).ready(() => {
     var editableHandler = new EditableEventHandler();
     var cancelEditableEventHandler = new CancelEditableEventHandler();
-    var fieldFormEventHandler = new FieldFormEventHandler();
+    var fieldFormEventHandler = new EditableFieldFormEvent();
     editableHandler.setupEventHandler();
     cancelEditableEventHandler.setupEventHandler();
     fieldFormEventHandler.setupEventHandler();
-    console.log('hi');
     /*
     $(document).on('mousedown', (event) => cancelEditing(event));
     projectNameEditable.click((event) => projectNameShowHandler(event));

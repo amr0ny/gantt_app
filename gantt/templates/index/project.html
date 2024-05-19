@@ -63,17 +63,28 @@
                     <!-- TODO: Gotta implement API request and tab loading-->
                     <div id="js-navbar-chart-tab" class="container tab-pane active">
                         <div class="d-flex chart-wrapper h-100">
-                            <div class="card h-100 chart-table js-resizable"></div>
+                            <div class="card h-100 chart-table js-resizable">
+                                <div class="container-fluid chart-table-container">
+                                    <div class="row chart-table__header-container header-container">
+                                        <div class="header-container__item col-md-4">Задача</div>
+                                        <div class="header-container__item col-md-3">Исполнитель</div>
+                                        <div class="header-container__item col-md-2">Статус</div>
+                                        <div class="header-container__item col">Начало</div>
+                                        <div class="header-container__item col">Завершение</div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="flex-fill gantt-chart card">
                                 <div class="container-fluid gantt-chart-container">
-                                    <div class="row gantt-chart__header-container header-container">
-                                        <!-- TODO: Further, I gotta replace it with the JS to update this columns comnining with API endpoint sending data of mounths-->
+                                    <div class="row gantt-chart__header-container header-container js-grid-layout-months">
+                                       <!-- TODO: Further, I gotta replace it with the JS to update this columns comnining with API endpoint sending data of mounths-->
                                         <div class="header-container__item col">Май</div>
                                         <div class="header-container__item col">Июнь</div>
                                     </div>
                                     <div class="row gantt-chart__header-container header-container">
-                                        <div class="header-container__item col">
+                                        <div class="header-container__item col js-grid-layout-days">
                                             <!-- ! This is just a sample of numbers to imitate real behavior -->
+                                            
                                             <div class="row">
                                                 {% with ''|center:31 as range %}
                                                     {% for _ in range %}
@@ -84,7 +95,7 @@
                                         </div>
                                         <div class="header-container__item col">
                                             <div class="row">
-                                                {% with ''|center:43 as range %}
+                                                {% with ''|center:30 as range %}
                                                     {% for _ in range %}
                                                         <div class="header-container__item col">{{ forloop.counter }}</div>
                                                     {% endfor %}
@@ -95,7 +106,7 @@
                                     </div>
                                     <div class="gantt-chart-data-wrapper">
                                         <div class="gantt-chart-data-area">
-                                            {% with ''|center:30 as range %}
+                                            {% with ''|center:0 as range %}
                                                 {% for _ in range %}
                                                 <div class="row gantt-chart__task-row task-row"></div>
                                                 {% endfor %}
