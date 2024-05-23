@@ -712,46 +712,95 @@ GridLayoutTaskLoader.prototype.getDateObjects = function(gridMonths) {
     return result;
 }
 GridLayoutTaskLoader.prototype.setGridLayout = function(tasks, dateObject) {
-    $(this.chartLayoutContainer).css({'width':`${dateObject.length*30*30}`});
-    for (monthObj of dateObject) {
-        let monthHeader = $('<div>').addClass('header-container__item col').text(`${this.months[monthObj.month-1]} ${monthObj.year}`);
+    $(this.chartLayoutContainer).css({'width': `${dateObject.length * 30 * 30}px`});
+
+    // Отображение месяцев и дней в календаре
+    for (let monthObj of dateObject) {
+        let monthHeader = $('<div>').addClass('header-container__item col').text(`${this.months[monthObj.month - 1]} ${monthObj.year}`);
         $(this.gridLayoutMonthsElement).append(monthHeader);
+
         let daysHeader = $('<div>').addClass('header-container__item col');
         let daysRow = $('<div>').addClass('row');
-        for (let i=1; i <= monthObj.days; i++) {
+        for (let i = 1; i <= monthObj.days; i++) {
             let daysItem = $('<div>').addClass('header-container__item col').text(i);
             daysRow.append(daysItem);
-            daysHeader.append(daysRow);
         }
+        daysHeader.append(daysRow);
         $(this.gridLayoutDaysElement).append(daysHeader);
     }
+
+    // Отображение задач в таблице и календаре
     for (let task of tasks) {
         let taskRowContainer = $('<div>').addClass('row gantt-chart__task-row task-row').attr('data-task-id', task.id);
         let tableRow = $('<div>').addClass('chart-table__task-row task-row').attr('data-task-id', task.id);
+
         let tableTaskCol = $('<div>').addClass('table-row__item col-md-4 js-task-col-name').text(task.name);
-        let tableAssigneeCol = $('<div>').addClass('table-row__item col-md-3 js-task-col-assignee').text(task.assignees.length>0 ? task.assignees : 'Не назначен');
+        let tableAssigneeCol = $('<div>').addClass('table-row__item col-md-3 js-task-col-assignee').text(task.assignees.length > 0 ? task.assignees : 'Не назначен');
         let tableStatusCol = $('<div>').addClass('table-row__item col-md-2 js-task-col-status');
         let tableBadgeStatus = $('<span>').addClass('badge p-1 badge-success').text(task.status);
         tableStatusCol.append(tableBadgeStatus);
+
         let tableStartDateCol = $('<div>').addClass('table-row__item col js-task-col-start-date').text(new Date(task['start_datetime']).toISOString().split('T')[0]);
         let tableEndDateCol = $('<div>').addClass('table-row__item col js-task-col-end-date').text(new Date(task['end_datetime']).toISOString().split('T')[0]);
+
         tableRow.append([tableTaskCol, tableAssigneeCol, tableStatusCol, tableStartDateCol, tableEndDateCol]);
         $(this.gridTableContainer).append(tableRow);
-        for (monthObj of dateObject) {
+
+        // Создание строк для дней в календаре
+        for (let monthObj of dateObject) {
             let taskColumn = $('<div>').addClass('col task-row__month-col');
-            let taskRow = $('<div>').addClass('row h-100')
-            for (let i=1; i <= monthObj.days; i++) {
+            let taskRow = $('<div>').addClass('row h-100');
+
+            for (let i = 1; i <= monthObj.days; i++) {
                 let taskItem = $('<div>').addClass('task-row__item col');
                 taskRow.append(taskItem);
             }
             taskColumn.append(taskRow);
             taskRowContainer.append(taskColumn);
-
         }
         $(this.gridLayoutContainer).append(taskRowContainer);
-        $(this.tableLayoutContainer).append(tableRow);
     }
-}
+
+    // Отображение задач на календаре
+    for (let task of tasks) {
+        let startDate = new Date(task['start_datetime']);
+        let endDate = new Date(task['end_datetime']);
+        let startMonthIndex = dateObject.findIndex(obj => obj.month === (startDate.getMonth() + 1) && obj.year === startDate.getFullYear());
+        let endMonthIndex = dateObject.findIndex(obj => obj.month === (endDate.getMonth() + 1) && obj.year === endDate.getFullYear());
+
+        let startOffset = 0;
+        for (let i = 0; i < startMonthIndex; i++) {
+            startOffset += dateObject[i].days;
+        }
+        startOffset += startDate.getDate() - 1;
+
+        let endOffset = 0;
+        for (let i = 0; i < endMonthIndex; i++) {
+            endOffset += dateObject[i].days;
+        }
+        endOffset += endDate.getDate() - 1;
+
+        let totalDays = endOffset - startOffset + 1;
+
+        let taskElement = $('<div>')
+            .addClass('task-element')
+            .css({
+                'position': 'absolute',
+                'left': `${startOffset * 30}px`,
+                'width': `${totalDays * 30}px`,
+                'height': '100%',
+                'background-color': 'rgba(0,123,255,0.5)',
+                'border': '1px solid #007bff',
+                'box-sizing': 'border-box'
+            })
+            .text(task.name);
+
+        $(`.gantt-chart__task-row[data-task-id="${task.id}"]`).append(taskElement);
+    }
+};
+
+
+
 
 GridLayoutTaskLoader.prototype.eventHandler = function(data) {
     if (data.hasOwnProperty('tasks'))
@@ -782,94 +831,6 @@ var AbbreviatedTaskLoader = function() {
 AbbreviatedTaskLoader.prototype = Object.create(BaseAbbreviatedEventHandler.prototype);
 AbbreviatedTaskLoader.prototype.constructor = AbbreviatedTaskLoader;
 
-AbbreviatedTaskLoader.prototype.setTasksTable = function(tasks) {
-
-}
-
-
-AbbreviatedTaskLoader.prototype.getMonthYearArray = function(startDate, endDate) {
-    let currentDate = new Date(startDate); // Начальная дата
-    const endDateObj = new Date(endDate); // Конечная дата
-    const months = [];
-
-    // Пока текущая дата меньше или равна конечной дате
-    while (currentDate <= endDateObj) {
-        // Получаем номер месяца (от 0 до 11) и год для текущей даты
-        const month = currentDate.getMonth() + 1; // +1, чтобы начать с 1, а не с 0
-        const year = currentDate.getFullYear();
-        const monthStr = this.months[month-1];
-        // Добавляем кортеж в массив
-        months.push([month, year]);
-
-        // Переходим к следующему месяцу
-        currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-
-    return months;
-}
-
-AbbreviatedTaskLoader.prototype.getDateObjects = function(gridMonths) {
-    const result = [];
-    // Перебираем каждый кортеж в массиве
-    for (const [month, year] of gridMonths) {
-        // Получаем количество дней в текущем месяце и году
-        const daysInMonth = new Date(year, month, 0).getDate();
-
-        // Создаем объект для текущего месяца
-        const monthObject = {
-            month: month,
-            year: year,
-            days: daysInMonth
-        };
-
-        // Добавляем объект в результирующий массив
-        result.push(monthObject);
-    }
-
-    return result;
-}
-
-AbbreviatedTaskLoader.prototype.setTasksChart = function(tasks, dateObject) {
-    // Iterate through each task
-    for (let task of tasks) {
-        // Find the row corresponding to the task
-        let taskRow = this.chartTaskContainer.find(`.task-row[data-task-id='${task.id}']`);
-
-        // Calculate the start and end day positions for the task
-        let startDate = new Date(task.start_datetime);
-        let endDate = new Date(task.end_datetime);
-
-        // Loop through the dateObject to determine the start and end columns
-        let startColumn = 0;
-        let endColumn = 0;
-        let currentDay = 0;
-
-        for (let monthObj of dateObject) {
-            for (let i = 1; i <= monthObj.days; i++) {
-                currentDay++;
-                let currentDate = new Date(monthObj.year, monthObj.month - 1, i);
-
-                if (currentDate.toDateString() === startDate.toDateString()) {
-                    startColumn = currentDay;
-                }
-                if (currentDate.toDateString() === endDate.toDateString()) {
-                    endColumn = currentDay;
-                }
-            }
-        }
-
-        // Create the badge div and set its position
-        let badge = $('<div>').addClass('badge badge-primary task-badge')
-                              .css({
-                                  'grid-column-start': startColumn,
-                                  'grid-column-end': endColumn + 1
-                              })
-                              .text(task.name);
-
-        // Append the badge to the task row
-        taskRow.find('.task-row__month-col').first().append(badge);
-    }
-}
 
 AbbreviatedTaskLoader.prototype.eventHandler = function(data) {
     if (!data.hasOwnProperty('tasks') || data.tasks.length === 0) {
@@ -884,11 +845,6 @@ AbbreviatedTaskLoader.prototype.eventHandler = function(data) {
     var firstTaskDatetime = new Date(firstTask.start_datetime);
     var lastTaskDatetime = new Date(lastTask.end_datetime);
 
-    var gridMonths = this.getMonthYearArray(firstTaskDatetime, lastTaskDatetime);
-    var dateObject = this.getDateObjects(gridMonths);
-
-    this.setTasksChart(tasks, dateObject);
-    this.setTasksTable(tasks);
 }
 
 /*
