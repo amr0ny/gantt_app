@@ -12,7 +12,6 @@ class Person(AbstractUser):
 
 
 class Project(TimeStampedMixin, UUIDMixin):
-
     class StatusChoices(models.TextChoices):
         AS_SCHEDULED = 'as scheduled'
         AT_RISK = 'at risk'
@@ -20,16 +19,17 @@ class Project(TimeStampedMixin, UUIDMixin):
         NO_STATUS = 'no status'
 
     name = models.CharField('name', max_length=255)
-    start_date = models.DateTimeField('start_date', auto_now_add=True)
+    start_date = models.DateField('start_date')
     status = models.TextField('status', choices=StatusChoices.choices, default=StatusChoices.NO_STATUS)
     progress = models.FloatField('progress', validators=[MinValueValidator(0),
-                                                         MaxValueValidator(1)])
+                                                         MaxValueValidator(1)], default=0)
     members = models.ManyToManyField(Person, through='PersonProject', related_name='projects')
     creator = models.ForeignKey(Person, on_delete=models.DO_NOTHING, related_name='created_projects', blank=True)
     class Meta:
         db_table = "content\".\"project"
 
 
+# TODO: Implement mechanism of subtasks
 class Task(UUIDMixin, TimeStampedMixin):
     class TypeChoices(models.TextChoices):
         TASK = 'task'
@@ -37,7 +37,7 @@ class Task(UUIDMixin, TimeStampedMixin):
         MILESTONE = 'milestone'
 
     class StatusChoices(models.TextChoices):
-        OPEN = 'option'
+        OPEN = 'open'
         IN_PROGRESS = 'in progress'
         DONE = 'done'
         CLOSED = 'closed'
@@ -49,19 +49,21 @@ class Task(UUIDMixin, TimeStampedMixin):
         LOW = 'low'
         THE_LOWEST = 'the lowest'
     
-    # TODO: Change field `color` to IntegerField and define method to get the color based on integer id
     name = models.CharField('name', max_length=255)
-    status = models.TextField('status', choices=StatusChoices.choices)
+    status = models.TextField('status', choices=StatusChoices.choices, default=StatusChoices.OPEN)
     type = models.TextField('type', choices=TypeChoices.choices)
+    # TODO: Change field `color` to IntegerField and define method to get the color based on integer id
+    # TODO: In script type json tag provide info in colors
     color = models.CharField(max_length=7)
-    priority = models.TextField('priority', choices=PriorityChoices.choices)
+    priority = models.TextField('priority', choices=PriorityChoices.choices, default=PriorityChoices.MEDIUM)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    assignees = models.ManyToManyField(Person, related_name='tasks', through='PersonTask',
+    assignees = models.ManyToManyField(Person, related_name='tasks',
                                      limit_choices_to={'projects': project})
+    # TODO: probably it's good idea to add field 'subtasks' or smth
     dependencies = models.ManyToManyField('self', symmetrical=False, blank=True)
-    start_datetime = models.DateTimeField('start_time')
+    start_datetime = models.DateTimeField('start_datetime')
     end_datetime = models.DateTimeField('end_datetime')
-    deadline = models.DateTimeField('deadline')
+    # ! Perhaps, I remove 'deadline' field later
     modified = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -95,11 +97,8 @@ class PersonProject(UUIDMixin):
         db_table = "content\".\"person_project"
         # TODO: Add indices
 
-
-class PersonTask(UUIDMixin):
-    person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = "content\".\"person_task"
-        # TODO: Add indices
+    @classmethod
+    def create(cls, project, person, role):
+        instance = cls(project=project, person=person, role=role)
+        instance.save()
+        return instance

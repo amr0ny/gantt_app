@@ -3,6 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect
 from gantt.forms import SignUpForm
+from django.http import HttpResponse
+from django.urls import reverse
+import json
+
 # Create your views here.
 
 def signup(request):
@@ -31,11 +35,39 @@ def signin(request):
     return render(request, 'registration/signin.html', {'form': form})
 
 #! Implement mechanism of remembering last project user worked on
+
+
 @login_required
 def index(request):
     current_project = request.user.current_project if hasattr(request.user, 'current_project') else None
+    data = {
+        'user' : {
+            'id': request.user.id
+            },
+        'project': {
+            'id': current_project
+            },
+        'content': {
+            'statuses': {
+                'no status': {'class': 'list-group-item-info', 'text': 'Не установлен'},
+                'at risk': {'class': 'list-group-item-warning', 'text':'Под угрозой'},
+                'expired': {'class': 'list-group-item-danger', 'text': 'Просрочен'},
+                'as scheduled': {'class': 'list-group-item-success', 'text': 'По графику'},
+            },
+            'roles': {
+                'Admin': {'text': 'Владелец проекта'},
+                'Editor': {'text': 'Участник'},
+            },
+            'months':[
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            ]
+        }
+    }
     
-    return render(request, 'index/project.html', {'project': project})
+    template = 'index/project.html'
+    context = { 'context_data': json.dumps(data, ensure_ascii=False) }
+    return render(request, template, context)
 
 def project(request, id):
-    return id
+    return HttpResponse(str(id))

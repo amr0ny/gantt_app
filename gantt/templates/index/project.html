@@ -1,17 +1,18 @@
 {% extends 'base.html' %}
 {% block title %} Gantt app {% endblock %}
+{% block context %} {{ context_data|safe }} {% endblock %}
 {% load static %}
 {% block styles %}
 <link rel="stylesheet" type="text/css" href="{% static 'gantt/css/project.css' %}">
 {% endblock %}
 {% block content %}
-    <div class="d-flex container-fluid h-100 w-100 m-0 p-0">
+    <div class="js-main-container d-flex container-fluid h-100 w-100 m-0 p-0">
         <div class="nav sidebar p-15 h-100 flex-column bg-primary">
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-sidebar-createproject">Создать проект</div>
+                <div class="nav-link text-white" id="js-sidebar-createproject" data-toggle="modal" data-target="#modal-create-project">Создать проект</div>
             </li>
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-sidebar-allprojects">Все проекты</div>
+                <div class="nav-link text-white" id="js-sidebar-allprojects" data-toggle="modal" data-target="#modal-project-list">Все проекты</div>
                 </li>
             <li class="nav-item clickable">
                 <div class="nav-link text-white" id="js-sidebar-mytasks">Мои задачи</div>
@@ -25,25 +26,25 @@
                         <div class="col align-items-center d-flex justify-content-start flex-row">
                             <div class="project-name p-2 d-flex">
                                 <!-- TODO: To fill the value with actual one in js -->
-                                <div class="clickable js-editable js-field p-1" data-field="project-name" data-form="project-name">Project 1</div>
+                                <div class="clickable js-editable js-field p-1 js-project-name" data-field="project-name" data-form="project-name">Project 1</div>
                                 <button class="js-btn-editable btn btn-sm btn-primary d-none js-field-submit" data-form="project-name" data-related="project-name"><i class="fa fa-check"></i></button>
                             </div>
                             <div class="dropdown">
-                                <button class="btn list-group-item-success dropdown-toggle" type="button" data-toggle="dropdown">По графику
+                                <button class="btn list-group-item-success dropdown-toggle js-project-status" type="button" data-toggle="dropdown">По графику
                                 <span class="caret"></span></button>
                                 <ul class="dropdown-menu">
                                     <!-- TODO: Add proper styles-->
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">None</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">Не установлен</li>
                                     <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success">По графику</li>
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Просрочен</li>
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Под угрозой</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Просрочен</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Под угрозой</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="col d-flex justify-content-end flex-row">
                             <div class="role-container d-flex align-items-center">
                                 <!-- * Perhaps I will do something with the style -->
-                                <span class="badge badge-light p-3">Владелец проекта</span>
+                                <span class="badge badge-light p-3 js-project-role">Владелец проекта</span>
                             </div>
                         </div>
                     </div>
@@ -72,45 +73,22 @@
                                         <div class="header-container__item col">Начало</div>
                                         <div class="header-container__item col">Завершение</div>
                                     </div>
+                                    <div class="chart-table-data-wrapper js-sync-scrollable">
+                                        <div class="chart-table-data-area js-grid-layout-table-container">
+                                            
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex-fill gantt-chart card">
                                 <div class="container-fluid gantt-chart-container">
                                     <div class="row gantt-chart__header-container header-container js-grid-layout-months">
                                        <!-- TODO: Further, I gotta replace it with the JS to update this columns comnining with API endpoint sending data of mounths-->
-                                        <div class="header-container__item col">Май</div>
-                                        <div class="header-container__item col">Июнь</div>
                                     </div>
-                                    <div class="row gantt-chart__header-container header-container">
-                                        <div class="header-container__item col js-grid-layout-days">
-                                            <!-- ! This is just a sample of numbers to imitate real behavior -->
-                                            
-                                            <div class="row">
-                                                {% with ''|center:31 as range %}
-                                                    {% for _ in range %}
-                                                        <div class="header-container__item col">{{ forloop.counter }}</div>
-                                                    {% endfor %}
-                                                {% endwith %}
-                                            </div>
-                                        </div>
-                                        <div class="header-container__item col">
-                                            <div class="row">
-                                                {% with ''|center:30 as range %}
-                                                    {% for _ in range %}
-                                                        <div class="header-container__item col">{{ forloop.counter }}</div>
-                                                    {% endfor %}
-                                                {% endwith %}
-                                            </div>
-                                  
-                                        </div>
-                                    </div>
+                                    <div class="row gantt-chart__header-container header-container js-grid-layout-days"></div>
                                     <div class="gantt-chart-data-wrapper">
-                                        <div class="gantt-chart-data-area">
-                                            {% with ''|center:0 as range %}
-                                                {% for _ in range %}
-                                                <div class="row gantt-chart__task-row task-row"></div>
-                                                {% endfor %}
-                                            {% endwith %}
+                                        <div class="gantt-chart-data-area js-grid-layout-container">
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -124,6 +102,51 @@
                 </div>
             </div>
             <div class="footer"></div>
+        </div>
+    </div>
+    <div class="js-modal-blur modal fade" id="modal-create-project">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Создайте проект</h4>
+                </div>
+                <form class="js-form" method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Название проекта:</label>
+                            </div>
+                            <div class="col">
+                                <input type="text" name="name" autofocus="">
+                            </div>
+                        </div>
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Дата начала:</label>
+                            </div>
+                            <div class="col">
+                                <input type="date" name="start_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-transparent">
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="js-modal-blur modal fade" id="modal-project-list">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Выберите проект</h4>
+                </div>
+                <div class="modal-body project-list-container">
+                    <ul class="group-list container-fluid project-list js-project-list">
+                    </ul>
+                </div>
         </div>
     </div>
 <script src="{% static 'gantt/js/project.js' %}"></script>

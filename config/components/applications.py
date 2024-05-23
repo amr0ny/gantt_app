@@ -8,6 +8,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'gantt.apps.GanttConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
