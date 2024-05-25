@@ -112,12 +112,15 @@ export class SingleFieldEventHandler extends BasePOSTEventHandler {
 
 /*
  ****************************
+ TODO: Gotta add here project list loading
 */
 
-export class DocumentReadyModalShowUpLoader extends BaseDocumentReadyHandler {
+
+export class DocumentReadyContentLoader extends BaseDocumentReadyHandler {
     eventHandler() {
         var jsonContext = this.parseJsonContext();
-        if (!jsonContext.project.id) {
+        var projectId = jsonContext.project.id;
+        if (!projectId) {
             $.ajax({
                 url: '/api/v1/projects/',
                 type: 'GET',
@@ -129,6 +132,20 @@ export class DocumentReadyModalShowUpLoader extends BaseDocumentReadyHandler {
                         keyboard: false,
                         show: true
                     });
+                },
+                error: (data) => {
+                    console.error(data);
+                }
+            });
+        }
+        else {
+            $.ajax({
+                url: `/api/v1/projects/${projectId}/`,
+                type: 'GET',
+                dataType: 'JSON',
+                success: (data) => {
+                    var abbreviatedProjectLoader = new AbbreviatedProjectLoader(jsonContext.project.id);
+                    abbreviatedProjectLoader.eventHandler(data);
                 },
                 error: (data) => {
                     console.error(data);
@@ -230,13 +247,14 @@ export class AddTaskEventHandler extends BaseFormEventHandler {
     }
 
     getEndpoint() {
-        const projectId = this.jsonContext.project.id;
+        const jsonContext = this.parseJsonContext();
+        const projectId = jsonContext.project.id;
         return `/api/v1/projects/${projectId}/tasks/`;
     }
 
     success(data) {
-        var abbreviatedNewTaskLoader = AbbreviatedNewTaskLoader(data);
-        abbreviatedNewTaskLoader.eventHandler();
+        var gridLayoutTaskLoader = new GridLayoutTaskLoader();
+        gridLayoutTaskLoader.eventHandler();
     }
 }
 
@@ -260,6 +278,7 @@ export class AbbreviatedNewTaskLoader extends BaseAbbreviatedEventHandler {
             throw new Error('Elements are unavailable');
         }
     }
+    
 
     calculateItemPosition(startDate, endDate, itemWidth) {
         const dateObject = this.dateObject;
@@ -609,7 +628,23 @@ export class GridLayoutTaskLoader extends BaseAbbreviatedEventHandler {
         this.setProjectBorders(tasks, dateObject);
     }
 
-    eventHandler(data) {
+    eventHandler() {
+        var jsonContext = this.parseJsonContext();
+        var projectId = jsonContext.project.id;
+        if (!projectId)
+            throw new Error('Context data doesn\'t contain project id');
+        $.ajax({
+            type: 'GET',
+            url: `/api/v1/projects/${projectId}`, 
+            dataType: 'JSON',
+            success: (data) => this.success(data), 
+            error: (data) => {
+                console.error(data);
+            }
+            
+        })
+    }
+    success(data) {
         if (!data.hasOwnProperty('tasks')) {
             throw new Error('Server response doesn\'t contain tasks field.');
         }
@@ -659,7 +694,7 @@ export class AbbreviatedProjectLoader extends BaseAbbreviatedEventHandler {
         this.projectNameLoader.eventHandler(data);
         this.projectStatusLoader.eventHandler(data);
         this.projectRoleLoader.eventHandler(data);
-        this.gridLayoutLoader.eventHandler(data);
+        this.gridLayoutLoader.eventHandler();
     }
 }
 

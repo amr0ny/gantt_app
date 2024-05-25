@@ -83,7 +83,7 @@ class TaskViewSet(ModelViewSet):
         user = self.request.user
         project = self.get_project_instance()
         if user.is_authenticated:
-            queryset = Task.objects.filter(Q(project__creator=user) & Q(project=project)).order_by('start_datetime').distinct()
+            queryset = Task.objects.filter(project=project).order_by('start_datetime')
         else:
             queryset = Project.objects.none()
         return queryset
@@ -93,6 +93,15 @@ class TaskViewSet(ModelViewSet):
             return TaskReadSerializer
         return TaskWriteSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        task = serializer.instance
+        read_serializer = TaskReadSerializer(task)
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
     def perform_create(self, serializer):
         project = self.get_project_instance()
         serializer.save(project=project)

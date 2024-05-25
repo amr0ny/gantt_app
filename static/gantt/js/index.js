@@ -4,7 +4,7 @@ import {
     EditableEventHandler,
     SyncScrollHandler,
     ProjectListLoader,
-    DocumentReadyModalShowUpLoader,
+    DocumentReadyContentLoader,
     AddTaskModalShowUpEventHandler,
     ProjectListModalShowUpHandler,
     CreateProjectModalShowUpHandler,
@@ -19,7 +19,7 @@ $(document).ready(() => {
     var fieldFormEventHandler = new SingleFieldEventHandler();
     var syncScrollHandler = new SyncScrollHandler('.js-sync-scrollable');
     var projectListLoader = new ProjectListLoader();
-    var dialogModalShowUpLoader = new DocumentReadyModalShowUpLoader();
+    var dialogModalShowUpLoader = new DocumentReadyContentLoader();
     var addTaskModalShowUpEventHandler = new AddTaskModalShowUpEventHandler();
     var projectListModalShowUpHandler = new ProjectListModalShowUpHandler();
     var addTaskEventHandler = new AddTaskEventHandler();
