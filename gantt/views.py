@@ -39,7 +39,8 @@ def signin(request):
 
 @login_required
 def index(request):
-    current_project = request.user.current_project if hasattr(request.user, 'current_project') else None
+    print(request.session['project']['id'], 'project' in request.session, '\n\n\n\n');
+    current_project = request.session['project']['id'] if 'project' in request.session and 'id' in request.session['project'] else None
     data = {
         'user' : {
             'id': request.user.id

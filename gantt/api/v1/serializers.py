@@ -41,7 +41,7 @@ class TaskWriteSerializer(serializers.ModelSerializer):
     end_datetime = serializers.DateTimeField()
     class Meta:
         model = Task
-        fields = ['id', 'name', 'type', 'color', 'start_datetime', 'end_datetime']
+        fields = ['id', 'name', 'type', 'start_datetime', 'end_datetime']
 
     def create(self, validated_data):
         return Task.objects.create(**validated_data)

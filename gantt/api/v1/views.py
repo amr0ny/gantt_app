@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.response import Response
@@ -23,6 +24,15 @@ class ProjectViewSet(ModelViewSet):
             queryset = Project.objects.none()
         return queryset
     
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        project = serializer.instance
+        read_serializer = ProjectReadSerializer(project)
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -93,3 +103,17 @@ class TaskViewSet(ModelViewSet):
         self.check_object_permissions(self.request, project)
         return project
     
+
+class ContextDataUpdateAPIView(APIView):
+    def post(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'error': 'User is not authenticated'}, status=status.HTTP_403_FORBIDDEN)
+
+        updates = request.data
+        updated = {}
+        for key, value in updates.items():
+            request.session[key] = value
+            updated[key] = value
+        
+        return Response(updated, status=status.HTTP_200_OK)

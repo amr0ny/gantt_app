@@ -9,13 +9,13 @@
     <div class="js-main-container d-flex container-fluid h-100 w-100 m-0 p-0">
         <div class="nav sidebar p-15 h-100 flex-column bg-primary">
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-sidebar-createproject" data-toggle="modal" data-target="#modal-create-project">Создать проект</div>
+                <div class="nav-link text-white" id="js-modal-btn-create-project">Создать проект</div>
             </li>
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-sidebar-allprojects" data-toggle="modal" data-target="#modal-project-list">Все проекты</div>
+                <div class="nav-link text-white" id="js-modal-btn-project-list">Все проекты</div>
                 </li>
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-sidebar-mytasks">Мои задачи</div>
+                <div class="nav-link text-white" id="js-modal-btn-sidebar-tasks">Мои задачи</div>
             </li>
         </div>
         <div class="main-content-wrapper d-flex flex-column container-fluid">
@@ -77,6 +77,12 @@
                                         <div class="chart-table-data-area js-grid-layout-table-container">
                                             
                                         </div>
+                                        <div class="chart-table__task-row task-row chart-table-btns-wrapper">
+                                            <div class="header-container__item chart-table_add-container col-md-7">
+                                                <div class="chart-table_add-row chart-table_add-row_add-task js-add-task"><i class="fa fa-plus"></i>Добавить задачу</div>
+                                                <div class="chart-table_add-row chart-table_add-row_add-milestone js-add-milestone">Добавить веху</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -110,7 +116,8 @@
                 <div class="modal-header">
                     <h4 class="modal-title">Создайте проект</h4>
                 </div>
-                <form class="js-form" method="post">
+                <!-- TODO: Change class to smth else-->
+                <form class="js-form-project" method="post">
                     <div class="modal-body">
                         {% csrf_token %}
                         <div class="form-group row d-flex justify-content-center">
@@ -147,8 +154,51 @@
                     <ul class="group-list container-fluid project-list js-project-list">
                     </ul>
                 </div>
+            </div>
         </div>
     </div>
-<script src="{% static 'gantt/js/project.js' %}"></script>
+    <div class="js-modal-blur modal fade" id="modal-create-task">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Добавить задачу</h4>
+                </div>
+                <form class="js-form-task" method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Название задачи:</label>
+                            </div>
+                            <div class="col">
+                                <input type="text" name="name" autofocus="">
+                            </div>
+                        </div>
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Дата и время начала:</label>
+                            </div>
+                            <div class="col">
+                                <input type="datetime-local" name="start_datetime" required>
+                            </div>
+                        </div>
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Дата и время завершения:</label>
+                            </div>
+                            <div class="col">
+                                <input type="datetime-local" name="end_datetime" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-transparent">
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script type="module" src="{% static 'gantt/js/index.js' %}"></script>
 <script src="{% static 'gantt/js/resizable.js' %}"></script>
 {% endblock %}

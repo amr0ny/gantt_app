@@ -54,7 +54,7 @@ class Task(UUIDMixin, TimeStampedMixin):
     type = models.TextField('type', choices=TypeChoices.choices)
     # TODO: Change field `color` to IntegerField and define method to get the color based on integer id
     # TODO: In script type json tag provide info in colors
-    color = models.CharField(max_length=7)
+    color = models.IntegerField(default=1);
     priority = models.TextField('priority', choices=PriorityChoices.choices, default=PriorityChoices.MEDIUM)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     assignees = models.ManyToManyField(Person, related_name='tasks',
@@ -68,6 +68,7 @@ class Task(UUIDMixin, TimeStampedMixin):
 
     class Meta:
         db_table = "content\".\"task"
+        ordering = ['start_datetime']
         # TODO: Add indices
 
 
