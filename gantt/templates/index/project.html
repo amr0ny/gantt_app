@@ -15,8 +15,11 @@
                 <div class="nav-link text-white" id="js-modal-btn-project-list">Все проекты</div>
                 </li>
             <li class="nav-item clickable">
-                <div class="nav-link text-white" id="js-modal-btn-sidebar-tasks">Мои задачи</div>
+                <div class="nav-link text-white" style="text-wrap: nowrap;" id="js-modal-btn-sidebar-tasks">Мои задачи <span style="font-size: 10px;" class="badge badge-light badge-pill">В разработке</span></div>
             </li>
+            <div class="container-fluid logout-wrapper">
+                <a class="logout-btn btn btn-light btn-sm" href="/logout/">Выйти из аккаунта</a>
+            </div>
         </div>
         <div class="main-content-wrapper d-flex flex-column container-fluid">
             <div class="d-flex flex-column p-3 h-100 w-100">
@@ -26,18 +29,17 @@
                         <div class="col align-items-center d-flex justify-content-start flex-row">
                             <div class="project-name p-2 d-flex">
                                 <!-- TODO: To fill the value with actual one in js -->
-                                <div class="clickable js-editable js-field p-1 js-project-name" data-field="project-name" data-form="project-name">Project 1</div>
-                                <button class="js-btn-editable btn btn-sm btn-primary d-none js-field-submit" data-form="project-name" data-related="project-name"><i class="fa fa-check"></i></button>
+                                <div class="clickable js-editable js-field p-1 js-project-name" data-field="name" data-entity="project"></div>
                             </div>
                             <div class="dropdown">
-                                <button class="btn list-group-item-success dropdown-toggle js-project-status" type="button" data-toggle="dropdown">По графику
+                                <button class="btn dropdown-toggle js-dropdown-field js-project-status" type="button" data-toggle="dropdown">
                                 <span class="caret"></span></button>
-                                <ul class="dropdown-menu">
+                                <ul id="js-dropdown-project-status" class="dropdown-menu dropdown-menu-project-status js-editable-dropdown">
                                     <!-- TODO: Add proper styles-->
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info">Не установлен</li>
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success">По графику</li>
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger">Просрочен</li>
-                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning">Под угрозой</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-info js-dropdown-field-item" data-field="status" data-entity="project" data-value="no status">Не установлен</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-success js-dropdown-field-item" data-field="status" data-entity="project" data-value="as scheduled">По графику</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-danger js-dropdown-field-item" data-field="status" data-entity="project" data-value="expired">Просрочен</li>
+                                    <li class="dropdown-menu-item dropdown-menu__item p-2 list-group-item-warning js-dropdown-field-item" data-field="status" data-entity="project" data-value="at risk">Под угрозой</li>
                                 </ul>
                             </div>
                         </div>
@@ -94,7 +96,6 @@
                                     <div class="row gantt-chart__header-container header-container js-grid-layout-days"></div>
                                     <div class="gantt-chart-data-wrapper">
                                         <div class="gantt-chart-data-area js-grid-layout-container">
-                                            
                                         </div>
                                     </div>
                                 </div>
@@ -102,8 +103,35 @@
                         </div>
                     </div>
                     <div id="js-navbar-members-tab" class="container tab-pane fade">
-                        <h3>Team members details</h3>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>  
+                        <div class="container-fluid m-2">
+                            <h3>Список участников</h3>
+                            <form class="js-form-member" method="post">    
+                                {% csrf_token %}
+                                <div class="form-group d-flex flex-row">
+                                    <label style="width:300px;" class="align-content-center" for="username">Добавить пользователя:</label>
+                                    <input class="form-control flex-fill" type="text" name="username" placeholder="Имя пользователя">
+                                    <input type="hidden" name="role" value="editor">
+                                    <button type="submit" class="btn btn-primary">Добавить</button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-flex justify-content-center">
+                                <div class="container-fluid members-container">
+                                    <ul class="list-group">
+                                        <li class="list-group-item members-list-header">
+                                            <div class="row">
+                                                <div class="col members-list-header__item">Участник</div>
+                                                <div class="col members-list-header__item">Роль проекте</div>
+                                                <div class="col members-list-header__item">Электронная почта</div>
+                                                <div class="col-md-1"></div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                    <ul class="js-members-list list-group members-list">
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -193,12 +221,47 @@
                         <input type="hidden" name="type" value="task">
                     </div>
                     <div class="modal-footer bg-transparent">
+                        <input type="submit" class="btn btn-primary">Создать</input>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="js-modal-blur modal fade" id="modal-create-milestone">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Добавить веху</h4>
+                </div>
+                <form class="js-form-task" method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Название вехи:</label>
+                            </div>
+                            <div class="col">
+                                <input type="text" name="name" autofocus="">
+                            </div>
+                        </div>
+                        <div class="form-group row d-flex justify-content-center">
+                            <div class="col">
+                                <label>Дата и время:</label>
+                            </div>
+                            <div class="col">
+                                <input type="datetime-local" name="start_datetime" required>
+                            </div>
+                        </div>
+                        <input type="hidden" name="type" value="milestone">
+                    </div>
+                    <div class="modal-footer bg-transparent">
                         <button type="submit" class="btn btn-primary">Создать</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
 
 <script type="module" src="{% static 'gantt/js/index.js' %}"></script>
 <script src="{% static 'gantt/js/resizable.js' %}"></script>

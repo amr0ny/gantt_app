@@ -65,7 +65,6 @@ class Task(UUIDMixin, TimeStampedMixin):
     end_datetime = models.DateTimeField('end_datetime')
     # ! Perhaps, I remove 'deadline' field later
     modified = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "content\".\"task"
         ordering = ['start_datetime']
@@ -96,7 +95,10 @@ class PersonProject(UUIDMixin):
 
     class Meta:
         db_table = "content\".\"person_project"
-        # TODO: Add indices
+        indexes = [
+            models.Index(fields=['person']),
+            models.Index(fields=['project']),
+        ]
 
     @classmethod
     def create(cls, project, person, role):

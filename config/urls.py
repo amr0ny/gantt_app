@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('signup/', gantt.views.signup),
     path('signin/', gantt.views.signin),
+    path('logout/', gantt.views.logout_view),
     path('', gantt.views.index),
     path('api/', include(('gantt.api.urls', 'api'), namespace='api')),
 ]

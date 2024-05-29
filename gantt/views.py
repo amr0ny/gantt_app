@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render,redirect
@@ -39,7 +39,6 @@ def signin(request):
 
 @login_required
 def index(request):
-    print(request.session['project']['id'], 'project' in request.session, '\n\n\n\n');
     current_project = request.session['project']['id'] if 'project' in request.session and 'id' in request.session['project'] else None
     data = {
         'user' : {
@@ -54,6 +53,13 @@ def index(request):
                 'at risk': {'class': 'list-group-item-warning', 'text':'Под угрозой'},
                 'expired': {'class': 'list-group-item-danger', 'text': 'Просрочен'},
                 'as scheduled': {'class': 'list-group-item-success', 'text': 'По графику'},
+            },
+            'task_statuses': {
+                'done': {'class': 'badge-success'},
+                'open': {'class': 'badge-primary'},
+                'in progress': {'class': 'badge-warning'},
+                'closed': {'class': 'badge-dark'},
+
             },
             'roles': {
                 'Admin': {'text': 'Владелец проекта'},
@@ -70,5 +76,7 @@ def index(request):
     context = { 'context_data': json.dumps(data, ensure_ascii=False) }
     return render(request, template, context)
 
-def project(request, id):
-    return HttpResponse(str(id))
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('')

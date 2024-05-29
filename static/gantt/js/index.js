@@ -1,7 +1,6 @@
 import {
     ModalBackgroundEventHandler,
     SingleFieldEventHandler,
-    EditableEventHandler,
     SyncScrollHandler,
     ProjectListLoader,
     DocumentReadyContentLoader,
@@ -9,12 +8,13 @@ import {
     ProjectListModalShowUpHandler,
     CreateProjectModalShowUpHandler,
     CreateProjectEventHandler,
-    AddTaskEventHandler
+    AddTaskEventHandler,
+    AddMilestoneShowUpEventHandler,
+    AddMemberEventHandler,
 } from './handlers/Handlers.js';
 
 $(document).ready(() => {
     var modalBackgroundEventHandler = new ModalBackgroundEventHandler();
-    var editableHandler = new EditableEventHandler();
     // var cancelEditableEventHandler = new CancelEditableEventHandler();
     var fieldFormEventHandler = new SingleFieldEventHandler();
     var syncScrollHandler = new SyncScrollHandler('.js-sync-scrollable');
@@ -24,11 +24,12 @@ $(document).ready(() => {
     var projectListModalShowUpHandler = new ProjectListModalShowUpHandler();
     var addTaskEventHandler = new AddTaskEventHandler();
     var createProjectModalShowUpHandler = new CreateProjectModalShowUpHandler();
+    var addMilestoneShowUpEventHandler = new AddMilestoneShowUpEventHandler();
     var createProjectEventHandler = new CreateProjectEventHandler();
+    var addMemberEventHandler = new AddMemberEventHandler();
     dialogModalShowUpLoader.setupEventHandler();
     projectListLoader.setupEventHandler();
     createProjectEventHandler.setupEventHandler();
-    editableHandler.setupEventHandler();
     //cancelEditableEventHandler.setupEventHandler();
     fieldFormEventHandler.setupEventHandler();
     syncScrollHandler.setupEventHandler();
@@ -36,6 +37,8 @@ $(document).ready(() => {
     addTaskModalShowUpEventHandler.setupEventHandler();
     createProjectModalShowUpHandler.setupEventHandler();
     projectListModalShowUpHandler.setupEventHandler();
+    addMilestoneShowUpEventHandler.setupEventHandler();
+    addMemberEventHandler.setupEventHandler();
     modalBackgroundEventHandler.setupEventHandler();
     /*
     $(document).on('mousedown', (event) => cancelEditing(event));

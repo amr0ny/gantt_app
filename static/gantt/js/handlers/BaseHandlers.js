@@ -23,6 +23,7 @@ export class BaseHandler {
 
     setJsonContext(updates) {
         var scriptElement = $('#context-data');
+        console.log(`UPDATES: ${updates}`)
         if (scriptElement.length === 0) {
             console.error('Element with id "context-data" not found.');
             return;
@@ -149,24 +150,16 @@ export class BasePOSTEventHandler extends BaseHandler {
     }
 }
 
-export class BaseDocumentEventHandler extends BaseGETEventHandler {
-    constructor(event) {
-        super(document, event);
-    }
-
-    // Assigns the event
-    assignEvent(event) {
-        return event;
-    }
-}
-
-export class BaseDefaultDocumentEventHandler extends BaseGETEventHandler {
+export class BaseDocumentEventHandler extends BaseHandler {
     constructor(e) {
-        super(document, e);
+        var selector = document;
+        super(selector, e);
     }
 
-    assignEvent(event) {
-        return event;
+    _setupEventHandler() {
+        $(selector).on(this.e, event => {
+            this.eventHandler(event);
+        });
     }
 }
 
@@ -202,16 +195,17 @@ export class BaseFormEventHandler extends BasePOSTEventHandler {
             processData: false,
             contentType: false,
             data: data,
-            success: (data) => { this.success(data) },
-            error: (data) => {
-                console.error(data);
-            }
+            success: data => { this.success(data) },
+            error: data => this.error(data)
         });
     }
 
     // Abstract method
     success(data) {
         throw new Error('Abstract method must be implemented.');
+    }
+    error(data) {
+        console.error(data);
     }
 }
 
@@ -224,7 +218,6 @@ export class BaseDocumentReadyHandler extends BaseDocumentEventHandler {
     _setupEventHandler() {
         var self = this;
         $(this.element).ready((event) => {
-            event = self.assignEvent(event);
             self.eventHandler();
         });
     }
@@ -256,3 +249,4 @@ export class BaseAbbreviatedEventHandler extends BaseHandler {
     }
 }
 
+//* должен устанавливать хэндлер на документ и обработчик на 

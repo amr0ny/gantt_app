@@ -1,11 +1,8 @@
 import {
     BaseHandler,
     BaseDefaultEventHandler,
-    BaseGETEventHandler,
     BasePOSTEventHandler,
     BaseAbbreviatedEventHandler,
-    BaseDocumentEventHandler,
-    BaseDefaultDocumentEventHandler,
     BaseFormEventHandler,
     BaseDocumentReadyHandler,
 } from './BaseHandlers.js';
@@ -33,25 +30,248 @@ export class ModalBackgroundEventHandler extends BaseDefaultEventHandler {
  ****************************
 */
 
-export class EditableEventHandler extends BaseDefaultEventHandler {
+// TODO: Implement classes for fields updating
+class EditableEventHandler extends BaseAbbreviatedEventHandler {
     constructor() {
-        super('.js-editable', 'click');
+        super();
         this.dataFieldName = 'data-field';
-        this.dataFieldButtonName = 'data-related';
+        this.documentClickHandlerOn = false;
+        this.currentEditingElement = undefined;
+        this.endpoint = undefined;
     }
 
-    eventHandler(event) {
-        const target = event.target;
-        const buttonRelated = $(`.js-btn-editable[${this.dataFieldButtonName}='${$(target).attr(this.dataFieldName)}']`);
-        if ($(target).prop('contenteditable') !== 'true') {
-            $(target).prop('contenteditable', true).focus().removeClass('d-none');
+    setupDocumentClickEventHandler() {
+        if (!this.documentClickHandlerOn) {
+            this.documentClickHandlerOn = true;
+            $(document).on('click', event => {
+                if (this.currentEditingElement && !$.contains(this.currentEditingElement[0], event.target)) {
+                    this.saveAndDisableEditing(this.currentEditingElement);
+                    this.currentEditingElement = null;
+                }
+            });
         }
+    }
 
-        if (buttonRelated.length !== 0) {
-            $(buttonRelated).removeClass('d-none');
+    setupEventHandler() {
+        this.setupDocumentClickEventHandler();
+        const editableElement = $('.js-editable');
+        $(editableElement).off('click');
+        this.setupDocumentClickEventHandler();
+        $(editableElement).on('click', event => {
+            const target = event.target;
+            event.stopPropagation(); // Остановка распространения события
+
+            if (this.currentEditingElement && this.currentEditingElement[0] !== target) {
+                this.saveAndDisableEditing(this.currentEditingElement);
+            }
+
+            $(target).attr('contenteditable', 'true').addClass('editing');
+            this.currentEditingElement = $(target);
+
+            // Помещаем курсор в конец текста
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(target);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+    }
+
+    saveAndDisableEditing(element) {
+        element.attr('contenteditable', 'false').removeClass('editing');
+        this.endpoint = this.getEndpoint(element);
+        const data = this.serializeData(element);
+        this.sendPatchRequest(data, element);
+    }
+
+    getEndpoint(element) {
+        const jsonContext = this.parseJsonContext();
+        const projectId = jsonContext.project.id;
+        let endpoint;
+        const entity = $(element).attr('data-entity');
+        if (entity === 'project') {
+            endpoint = `api/v1/projects/${projectId}/`;
+        } else if (entity === 'task') {
+            const taskId = $(element).attr('data-entity-id');
+            endpoint = `api/v1/projects/${projectId}/tasks/${taskId}/`;
+        } else {
+            throw new Error('Unexpected entity name');
         }
+        return endpoint;
+    }
+
+    sendPatchRequest(data, element) {
+        if (this.endpoint === undefined) {
+            throw new Error('Endpoint must be defined');
+        }
+        const csrftoken = this.getCSRFToken();
+        $.ajax({
+            type: 'PATCH',
+            url: this.endpoint,
+            method: 'PATCH',
+            contentType: 'application/json',
+            beforeSend: xhr => {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            },
+            data: JSON.stringify(Object.fromEntries(data)),
+            success: data => this.success(data, element),
+            error: data => console.error(data)
+        });
+    }
+
+    success(data, element) {
+        if ($(element).attr('data-entity') === 'project') {
+        var abbriviatedProjectNameLoader = new AbbreviatedProjectNameLoader();
+        abbriviatedProjectNameLoader.eventHandler(data);
+        }
+        element.attr('contenteditable', 'false').removeClass('editing');
+        this.currentEditingElement = null;
+    }
+
+    serializeData(element) {
+        const data = {};
+        data[$(element).attr(this.dataFieldName)] = $(element).text();
+        return Object.entries(data);
+    }
+
+    getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 }
+
+class DropdownEditableEventHandler extends BaseAbbreviatedEventHandler {
+    constructor() {
+        super();
+        this.dataFieldName = 'data-field';
+        this.dataValueName = 'data-value';
+        this.documentClickHandlerOn = false;
+        this.currentEditingElement = undefined;
+        this.endpoint = undefined;
+    }
+
+    setupDocumentClickEventHandler() {
+        if (!this.documentClickHandlerOn) {
+            this.documentClickHandlerOn = true;
+            $(document).on('click', event => {
+                if (this.currentEditingElement && !$.contains(this.currentEditingElement[0], event.target)) {
+                    this.hideDropdown();
+                }
+            });
+        }
+    }
+
+    hideDropdown() {
+        $('.js-editable-dropdown').removeClass('show');
+        this.currentEditingElement = null;
+    }
+
+    serializeData(element) {
+        const data = {};
+        data[$(element).attr(this.dataFieldName)] = $(element).attr(this.dataValueName);
+        return Object.entries(data);
+    }
+
+    setupEventHandler() {
+        this.setupDocumentClickEventHandler();
+        const dropdownItem = $('.js-dropdown-field-item');
+        $(dropdownItem).off('click');
+        this.setupDocumentClickEventHandler();
+        $(dropdownItem).on('click', event => {
+            const target = event.target;
+            event.stopPropagation();
+            this.currentEditingElement = $(target);
+            this.saveAndDisableEditing(this.currentEditingElement);
+        });
+    }
+
+    saveAndDisableEditing(element) {
+        var data = this.serializeData(element);
+        this.endpoint = this.getEndpoint(element);
+        this.sendPatchRequest(data, element);
+    }
+
+    getEndpoint(element) {
+        const jsonContext = this.parseJsonContext();
+        const projectId = jsonContext.project.id;
+        let endpoint;
+        const entity = $(element).attr('data-entity');
+        if (entity === 'project') {
+            endpoint = `api/v1/projects/${projectId}/`;
+        } else if (entity === 'task') {
+            const taskId = $(element).attr('data-entity-id');
+            endpoint = `api/v1/projects/${projectId}/tasks/${taskId}/`;
+        } else {
+            throw new Error('Unexpected entity name');
+        }
+        return endpoint;
+    }
+
+    sendPatchRequest(data, element) {
+        if (this.endpoint === undefined) {
+            throw new Error('Endpoint must be defined');
+        }
+        const csrftoken = this.getCSRFToken();
+        $.ajax({
+            type: 'PATCH',
+            url: this.endpoint,
+            method: 'PATCH',
+            contentType: 'application/json',
+            beforeSend: xhr => {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            },
+            data: JSON.stringify(Object.fromEntries(data)),
+            success: data => this.success(data, element),
+            error: data => console.error(data)
+        });
+    }
+
+    success(data, element) {
+        if ($(element).attr('data-entity') === 'project') {
+            var projectStatusLoader = new AbbreviatedProjectStatusLoader();
+            projectStatusLoader.eventHandler(data);
+        }
+        else if($(element).attr('data-entity') === 'task') {
+            var jsonContext = this.parseJsonContext();
+            var task_statuses = jsonContext.content.task_statuses;
+            var targetTask = $(`.js-task-badge[data-task-id=${data.id}]`);
+            if (!targetTask) {
+                throw new Error('No task with specified id found');
+            }
+            targetTask.text(data.status).removeClass(Object.values(task_statuses).map(s => s.class).join(' '));
+            targetTask.addClass(task_statuses[data.status]['class']);
+        }
+        this.hideDropdown();
+    }
+
+    getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+}
+
+
 
 /*
  ****************************
@@ -108,12 +328,6 @@ export class SingleFieldEventHandler extends BasePOSTEventHandler {
         return context;
     }
 }
-
-
-/*
- ****************************
- TODO: Gotta add here project list loading
-*/
 
 
 export class DocumentReadyContentLoader extends BaseDocumentReadyHandler {
@@ -219,13 +433,6 @@ export class CreateProjectEventHandler extends BaseFormEventHandler {
 
     success(data) {
         const abbreviatedProjectLoader = new AbbreviatedProjectLoader(data.id);
-        const updates = {
-            'project': {
-                'id': data.id,
-            }
-        }
-        const abbreviatedContextDataUpdater = new AbbreviatedContextDataUpdater(updates);
-        abbreviatedContextDataUpdater.eventHandler();
         abbreviatedProjectLoader.eventHandler(data);
         $('#modal-create-project').modal('hide');
     }
@@ -252,16 +459,139 @@ export class AddTaskEventHandler extends BaseFormEventHandler {
         return `/api/v1/projects/${projectId}/tasks/`;
     }
 
+    serializeData(context) {
+        var formData = context;
+        let isEmpty = true;
+        for (let pair of formData.entries()) {
+            isEmpty = false;
+            break;
+        }
+        if (isEmpty) {
+            throw new Error('FormData is empty.');
+        }
+
+        if (formData.get('type') == 'milestone') {
+            formData.append('end_datetime', formData.get('start_datetime'));
+        }
+
+        return formData;
+    }
+
     success(data) {
         var gridLayoutTaskLoader = new GridLayoutTaskLoader();
-        gridLayoutTaskLoader.eventHandler();
+        var editableEventHandler = new EditableEventHandler();
+        var dropdownEditableEventHandler = new DropdownEditableEventHandler();
+        gridLayoutTaskLoader.eventHandler().then(() => {
+            editableEventHandler.setupEventHandler();
+            dropdownEditableEventHandler.setupEventHandler();
+
+        });
+        $('#modal-create-task').modal('hide');
     }
 }
 
+export class AddMemberEventHandler extends BaseFormEventHandler {
+    constructor() {
+        var selector = '.js-form-member';
+        super(selector);
+    }
+
+    getEndpoint() {
+        const jsonContext = this.parseJsonContext();
+        const projectId = jsonContext.project.id;
+        return `/api/v1/projects/${projectId}/members/`;
+    }
+
+    success(data) {
+        var abbreviatedNewMemberLoader = new AbbreviatedNewMemberLoader(data);
+        abbreviatedNewMemberLoader.eventHandler();
+    }
+}
+
+// Probably it's better to generalize it to Base class
+export class RemoveMemberEventHandler extends BaseAbbreviatedEventHandler {
+    constructor() {
+        super();
+    }
+
+    eventHandler(event) {
+        var target = event.target.closest('.js-member');
+        var memeberId = $(target).attr('data-member-id');
+        let jsonContext = this.parseJsonContext();
+        var projectId = jsonContext.project.id;
+        var endpoint = `/api/v1/projects/${projectId}/members/${memeberId}/`;
+        var csrftoken = this.getCSRFToken();
+        $.ajax({
+            type: 'DELETE', 
+            url: endpoint,
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            },
+            success: () => this.success(),
+            error: data => console.error(data)
+        });
+    }
+    
+    success() {
+        var membersLoader = new MembersLoader();
+        membersLoader.eventHandler();
+    }
+
+    getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+}  
 /*
  ****************************
 */
 
+/*
+export class BaseAbbreviatedPATCHFieldUpdater() {
+    constructor(selector, e) {
+        super()
+    }
+}
+*/
+
+export class DocumentPATCHFieldUpdater extends BaseHandler {
+    constructor() {
+        super(document, 'click');
+    }
+
+    _setupEventHandler() {
+        var self = this;
+        $(this.element).on(this.e, event => {
+            event = self.assignEvent(event);
+            context = self.getContextData(event);
+
+        });
+    }
+
+    getContextData() {
+        
+    }
+
+    assignEvent(event) {
+        return event;
+    }
+}
+
+
+
+/*
+ ****************************
+*/
 export class AbbreviatedNewTaskLoader extends BaseAbbreviatedEventHandler {
     constructor(task, dateObject) {
         super();
@@ -270,6 +600,8 @@ export class AbbreviatedNewTaskLoader extends BaseAbbreviatedEventHandler {
         this.chartLayoutContainer = $('.gantt-chart-container');
         this.gridLayoutContainer = $('.js-grid-layout-container');
         this.gridTableContainer = $('.js-grid-layout-table-container');
+        var jsonContext = this.parseJsonContext();
+        this.statuses = jsonContext.content.task_statuses;
 
         if (!this.task || !this.dateObject) {
             throw new Error('Some of the elements are undefined');
@@ -337,15 +669,46 @@ export class AbbreviatedNewTaskLoader extends BaseAbbreviatedEventHandler {
 
     renderTableTaskRow() {
         const task = this.task;
-        const tableRow = $('<div>').addClass('chart-table__task-row task-row').attr('data-task-id', task.id);
-        const tableTaskCol = $('<div>').addClass('table-row__item col-md-4 js-task-col-name').text(task.name);
-        const tableAssigneeCol = $('<div>').addClass('table-row__item col-md-3 js-task-col-assignee').text(task.assignees.length > 0 ? task.assignees.join(', ') : 'Не назначен');
-        const tableStatusCol = $('<div>').addClass('table-row__item col-md-2 js-task-col-status');
-        const tableBadgeStatus = $('<span>').addClass('badge p-1 badge-success').text(task.status);
-        const tableStartDateCol = $('<div>').addClass('table-row__item col js-task-col-start-date').text(new Date(task.start_datetime).toISOString().split('T')[0]);
-        const tableEndDateCol = $('<div>').addClass('table-row__item col js-task-col-end-date').text(new Date(task.end_datetime).toISOString().split('T')[0]);
-
-        $(tableStatusCol).append(tableBadgeStatus);
+        var tableRow = $('<div>');
+        var tableTaskCol = $('<div>');
+        var tableAssigneeCol = $('<div>');
+        var tableStatusCol = $('<div>');
+        var statusDropdownMenu = $('<div>');
+        var statusInProgressItem = $('<span>').text('in progress');
+        var statusOpenItem = $('<span>').text('open');
+        var statusClosedItem = $('<span>').text('closed');
+        var statusDoneItem = $('<span>').text('done');
+        var tableBadgeStatus = $('<div>');
+        var tableStartDateCol = $('<div>');
+        var tableEndDateCol = $('<div>');
+    
+        
+        if (task.type == 'task') {
+            tableRow.addClass('chart-table__task-row task-row').attr('data-task-id', task.id);
+            tableTaskCol.addClass('table-row__item col-md-4 js-task-col-name js-editable').attr({'data-entity-id': task.id, 'data-field': 'name', 'data-entity': 'task'}).text(task.name);
+            tableAssigneeCol.addClass('table-row__item col-md-3 js-task-col-assignee').text(task.assignees.length > 0 ? task.assignees.join(', ') : 'Не назначен');
+            tableStatusCol.addClass('table-row__item col-md-2 js-task-col-status js-dropdown-field').attr({'data-toggle': 'dropdown'});
+            tableBadgeStatus.addClass('badge p-1 js-task-badge').text(task.status).addClass(this.statuses[task.status]['class']).attr('data-task-id', task.id);
+            statusDropdownMenu.addClass('dropdown-menu js-editable-dropdown dropdown-menu-task');
+            statusInProgressItem.addClass('badge badge-warning js-dropdown-field-item').attr({'data-field': 'status', 'data-entity': 'task', 'data-value': 'in progress', 'data-entity-id': task.id});
+            statusOpenItem.addClass('badge badge-primary js-dropdown-field-item').attr({'data-field': 'status', 'data-entity': 'task', 'data-value': 'open', 'data-entity-id': task.id});
+            statusClosedItem.addClass('badge badge-dark js-dropdown-field-item').attr({'data-field': 'status', 'data-entity': 'task', 'data-value': 'closed', 'data-entity-id': task.id});
+            statusDoneItem.addClass('badge badge-success js-dropdown-field-item').attr({'data-field': 'status', 'data-entity': 'task', 'data-value': 'done', 'data-entity-id': task.id});
+            statusDropdownMenu.append([statusInProgressItem, statusOpenItem, statusDoneItem, statusClosedItem]);
+            $(tableStatusCol).append(tableBadgeStatus);
+            tableStatusCol.append(statusDropdownMenu);
+            tableStartDateCol.addClass('table-row__item col js-task-col-start-datetime').attr({'data-entity-id': task.id, 'data-field': 'start_datetime', 'data-entity': 'task'}).text(new Date(task.start_datetime).toISOString().split('T')[0]);
+            tableEndDateCol.addClass('table-row__item col js-task-col-end-datetime').attr({'data-entity-id': task.id, 'data-field': 'end_datetime', 'data-entity': 'task'}).text(new Date(task.end_datetime).toISOString().split('T')[0]);
+        }
+        else if (task.type == 'milestone') {
+            tableRow.addClass('chart-table__task-row task-row').attr('data-task-id', task.id);
+            tableTaskCol.addClass('table-row__item col-md-4 js-task-col-name').attr({'data-entity-id': task.id, 'data-field': 'name', 'data-entity': 'task'}).text(task.name);
+            tableAssigneeCol.addClass('table-row__item col-md-3 js-task-col-assignee').text(task.assignees.length > 0 ? task.assignees.join(', ') : 'Не назначен');
+            tableStatusCol.addClass('table-row__item col-md-2 js-task-col-status js-dropdown-field').attr({'data-entity-id': task.id, 'data-field': 'status', 'data-entity': 'task'});
+            tableStartDateCol.addClass('table-row__item col js-task-col-start-datetime').attr({'data-entity-id': task.id, 'data-field': 'start_datetime', 'data-entity': 'task'}).text(new Date(task.start_datetime).toISOString().split('T')[0]);
+            tableEndDateCol.addClass('table-row__item col js-disabled ').attr({'data-entity-id': task.id, 'data-field': 'end_endtime', 'data-entity': 'task'}).text(new Date(task.end_datetime).toISOString().split('T')[0]);
+        
+        }
         $(tableRow).append([tableTaskCol, tableAssigneeCol, tableStatusCol, tableStartDateCol, tableEndDateCol]);
         $(this.gridTableContainer).append(tableRow);
     }
@@ -365,25 +728,79 @@ export class AbbreviatedNewTaskLoader extends BaseAbbreviatedEventHandler {
     }
 
     renderTask() {
-        const tableItemWidth = $('.task-row__item').outerWidth();
-        const [width, leftPosition] = this.calculateItemPosition(new Date(this.task.start_datetime), new Date(this.task.end_datetime), tableItemWidth);
-        const taskElement = $('<div>')
-            .addClass('badge')
-            .css({
-                position: 'absolute',
-                marginTop: '5px',
-                left: `${leftPosition}px`,
-                width: `${width}px`,
-                backgroundColor: this.getColor(),
-                boxSizing: 'border-box'
-            })
-            .text(this.task.name);
+        var tableItemWidth = $('.task-row__item').outerWidth();
+        var [width, leftPosition] = this.calculateItemPosition(new Date(this.task.start_datetime), new Date(this.task.end_datetime), tableItemWidth);
+        var taskElement = $('<div>');
+        if (this.task.type == 'milestone') {
+            width = 20;
+            let rot = 45
+            taskElement.addClass('rounded')
+                .css({
+                    position: 'absolute',
+                    marginTop: '5px',
+                    left: `${leftPosition}px`,
+                    width: `${width}px`,
+                    height: `${width}px`,
+                    backgroundColor: '#D33DAF',
+                    boxSizing: 'border-box',
+                    transform: `rotate(-${rot}deg)`
+                })
+            var textElement = $('<div>')
+                .css({
+                    transform: `rotate(${rot}deg) translate(40px, 28px)`,
+                    width: '100px',
+                    fontSize: '75%',
+                    fontWeight: 700
+                })
+                .text(this.task.name);
+            taskElement.append(textElement);
+        }
+        else if (this.task.type == 'task') {
+            taskElement.addClass('badge')
+                .css({
+                    position: 'absolute',
+                    marginTop: '5px',
+                    left: `${leftPosition}px`,
+                    width: `${width}px`,
+                    backgroundColor: this.getColor(),
+                    boxSizing: 'border-box',
+                })
+                .text(this.task.name);
+        }
         $(`.gantt-chart__task-row[data-task-id="${this.task.id}"]`).append(taskElement);
     }
 
     eventHandler() {
         this.renderTaskRow();
         this.renderTask();
+    }
+}
+
+export class AbbreviatedNewMemberLoader extends BaseAbbreviatedEventHandler {
+    constructor(member) {
+        super();
+        this.member = member;
+        this.membersList = $('.js-members-list');
+    }
+
+    eventHandler() {
+        var member = this.member;
+        var removeMemberEventHandler = new RemoveMemberEventHandler();
+        var listGroupItem = $('<li>').addClass('list-group-item js-member').attr('data-member-id', member.person.id);
+        var listItemRow = $('<div>').addClass('row');
+        var memberFullName = $('<div>').addClass('col members-list__item js-member-full-name').text(`${member.person.first_name} ${member.person.last_name}`);
+        var memberRole = $('<div>').addClass('col members-list__item js-mebmer-full-name').text(`${member.role}`)
+        var memberEmail = $('<div>').addClass('col members-list__item js-member-email').text(`${member.person.email}`);
+        var memberRemove = $('<div>').addClass('col-md-1 text-center members-list__item member-remove-item js-remove-member');
+        var removeIcon = $('<i>').addClass('fas fa-trash');
+        $(memberRemove).on('click', (event) => {
+            removeMemberEventHandler.eventHandler(event);
+        });
+        memberRemove.append(removeIcon);
+        listItemRow.append([memberFullName, memberRole, memberEmail, memberRemove]);
+        
+        listGroupItem.append(listItemRow);
+        $(this.membersList).append(listGroupItem);
     }
 }
 
@@ -629,21 +1046,35 @@ export class GridLayoutTaskLoader extends BaseAbbreviatedEventHandler {
     }
 
     eventHandler() {
-        var jsonContext = this.parseJsonContext();
-        var projectId = jsonContext.project.id;
-        if (!projectId)
-            throw new Error('Context data doesn\'t contain project id');
-        $.ajax({
-            type: 'GET',
-            url: `/api/v1/projects/${projectId}`, 
-            dataType: 'JSON',
-            success: (data) => this.success(data), 
-            error: (data) => {
-                console.error(data);
-            }
-            
-        })
+        console.log(`parseJsonContext method: ${new Date().getTime()}`);
+        const jsonContext = this.parseJsonContext();
+        const projectId = jsonContext.project.id;
+
+        if (!projectId) {
+            throw new Error("Context data doesn't contain project id");
+        }
+
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                type: 'GET',
+                url: `/api/v1/projects/${projectId}/`,
+                dataType: 'JSON',
+                success: (data) => {
+                    try {
+                        this.success(data);
+                        resolve(data);
+                    } catch (error) {
+                        reject(error);
+                    }
+                },
+                error: (error) => {
+                    console.error(error);
+                    reject(error);
+                }
+            });
+        });
     }
+
     success(data) {
         if (!data.hasOwnProperty('tasks')) {
             throw new Error('Server response doesn\'t contain tasks field.');
@@ -669,6 +1100,35 @@ export class GridLayoutTaskLoader extends BaseAbbreviatedEventHandler {
     }
 }
 
+/*
+ ****************************
+*/
+
+export class MembersLoader extends BaseAbbreviatedEventHandler {
+    constructor() {
+        super();
+        let jsonContext = this.parseJsonContext();
+        this.projectId = jsonContext.project.id;
+        this.membersContainer = $('.js-members-list');
+    }
+
+    eventHandler() {
+        $.ajax({
+            url: `/api/v1/projects/${this.projectId}/members/`,
+            type: 'GET',
+            dataType: 'JSON',
+            success: (data) => this.success(data),
+            error: (data) => console.error(data)
+        });
+    }
+    success(data) {
+        $(this.membersContainer).empty();
+        data.forEach(member => {
+            var addNewMemberEventHandler = new AbbreviatedNewMemberLoader(member);
+            addNewMemberEventHandler.eventHandler(member);
+        });
+    }
+}
 
 /*
  ****************************
@@ -683,18 +1143,35 @@ export class AbbreviatedProjectLoader extends BaseAbbreviatedEventHandler {
         this.projectStatusLoader = new AbbreviatedProjectStatusLoader();
         this.projectRoleLoader = new AbbreviatedProjectRoleLoader();
         this.gridLayoutLoader = new GridLayoutTaskLoader();
+        //members tab
+        this.membersLoader = new MembersLoader();
+        this.editableEventHandler = new EditableEventHandler();
+        this.dropdownEditableEventHandler = new DropdownEditableEventHandler();
     }
 
-    saveProjectState(id) {
-
+    async saveProjectState(projectId) {
+        const updates = {
+            'project': {
+                'id': projectId
+            }
+        }
+        const abbreviatedContextDataUpdater = new AbbreviatedContextDataUpdater(updates);
+        await abbreviatedContextDataUpdater.eventHandler();
     }
 
     // Event handler method
     eventHandler(data) {
-        this.projectNameLoader.eventHandler(data);
-        this.projectStatusLoader.eventHandler(data);
-        this.projectRoleLoader.eventHandler(data);
-        this.gridLayoutLoader.eventHandler();
+        this.saveProjectState(data.id).then(() => {
+            this.projectNameLoader.eventHandler(data);
+            this.projectStatusLoader.eventHandler(data);
+            this.projectRoleLoader.eventHandler(data);
+            this.membersLoader.eventHandler();
+            this.gridLayoutLoader.eventHandler().then(() => {
+                this.editableEventHandler.setupEventHandler();
+                this.dropdownEditableEventHandler.setupEventHandler();
+            });
+        });
+        
     }
 }
 
@@ -709,12 +1186,6 @@ export class AbbreviatedProjectListElementHandler extends BaseAbbreviatedEventHa
         const target = event.target.closest('.js-project-list-item');
         const projectId = $(target).attr('data-project-id');
         const abbreviatedProjectLoader = new AbbreviatedProjectLoader(projectId);
-        const updates = {
-            'project': {
-                'id': projectId
-            }
-        }
-        const abbreviatedContextDataUpdater = new AbbreviatedContextDataUpdater(updates);
         $.ajax({
             url: `/api/v1/projects/${projectId}`,
             type: 'GET',
@@ -722,7 +1193,6 @@ export class AbbreviatedProjectListElementHandler extends BaseAbbreviatedEventHa
             success: (data) => {
                 $('#modal-project-list').modal('hide');
                 abbreviatedProjectLoader.eventHandler(data);
-                abbreviatedContextDataUpdater.eventHandler();
             },
             error: (error) => {
                 console.error(error);
@@ -743,6 +1213,16 @@ export class AddTaskModalShowUpEventHandler extends BaseDefaultEventHandler {
     }
 }
 
+export class AddMilestoneShowUpEventHandler extends BaseDefaultEventHandler {
+    constructor() {
+        super('.js-add-milestone', 'click');
+    }
+
+    eventHandler(event) {
+        $('#modal-create-milestone').modal();
+    }
+}
+
 export class AbbreviatedContextDataUpdater extends BasePOSTEventHandler {
     constructor(updates) {
         super();
@@ -750,27 +1230,34 @@ export class AbbreviatedContextDataUpdater extends BasePOSTEventHandler {
     }
 
     eventHandler() {
-        var context = this.getContextData(this.updates);
-        var data = this.serializeData(context);
-        var endpoint = this.getEndpoint();
-        var csrftoken = this.getCSRFToken();
-
-        $.ajax({
-            'url': endpoint,
-            'type': "POST",
-            'contentType': "application/json; charset=UTF-8",
-            'dataType': "JSON",
-            'processData': false,
-            'data': data,
-            'beforeSend': function(xhr, settings) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            },
-            'success': (updated) => this.success(updated),
-            'error': (data) => {
-                console.error(data)
-            }
+        return new Promise((resolve, reject) => {
+            var context = this.getContextData(this.updates);
+            var data = this.serializeData(context);
+            var endpoint = this.getEndpoint();
+            var csrftoken = this.getCSRFToken();
+            $.ajax({
+                url: endpoint,
+                type: "POST",
+                contentType: "application/json; charset=UTF-8",
+                dataType: "JSON",
+                processData: false,
+                data: data,
+                timeout: 5000,  // Таймаут в миллисекундах (5000 мс = 5 секунд)
+                beforeSend: function(xhr, settings) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                },
+                success: (updated) => {
+                    this.success(updated);
+                    resolve(updated);
+                },
+                error: (xhr, textStatus, errorThrown) => {
+                    this.error(xhr, textStatus, errorThrown);
+                    reject(new Error(textStatus));
+                },
+            });
         });
     }
+    
 
     serializeData(context) {
         return JSON.stringify(context);
@@ -793,9 +1280,17 @@ export class AbbreviatedContextDataUpdater extends BasePOSTEventHandler {
     }
 
     success(updated) {
+        console.log(`success method: ${new Date().getTime()}`);
         this.setJsonContext(updated);
     }
-
+    error(xhr, textStatus, errorThrown) {
+        console.log('sad');
+        if (textStatus === "timeout") {
+            console.error("Request timed out.");
+        } else {
+            console.error("Request failed: " + textStatus, errorThrown);
+        }
+    }
     getCSRFToken() {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

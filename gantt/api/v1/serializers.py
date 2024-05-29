@@ -39,14 +39,51 @@ class TaskReadSerializer(serializers.ModelSerializer):
 class TaskWriteSerializer(serializers.ModelSerializer):
     start_datetime = serializers.DateTimeField()
     end_datetime = serializers.DateTimeField()
+    status = serializers.ChoiceField(choices=Task.StatusChoices.choices, required=False)
     class Meta:
         model = Task
-        fields = ['id', 'name', 'type', 'start_datetime', 'end_datetime']
+        fields = ['id', 'name', 'type', 'start_datetime', 'end_datetime', 'status']
 
     def create(self, validated_data):
         return Task.objects.create(**validated_data)
     
     
+class MemberWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ['id', 'username']
+
+class MemberReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+
+class PersonProjectReadSerializer(serializers.ModelSerializer):
+    person = MemberReadSerializer()
+
+    class Meta:
+        model = PersonProject
+        fields = ['person', 'role'] 
+
+
+class PersonProjectWriteSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True)
+    person = MemberReadSerializer(read_only=True)
+
+    class Meta:
+        model = PersonProject
+        fields = ['username', 'person', 'role']
+
+    def create(self, validated_data):
+        username = validated_data.pop('username')
+        try:
+            person = Person.objects.get(username=username)
+        except Person.DoesNotExist:
+            raise serializers.ValidationError({"username": "User with this username does not exist."})
+
+        person_project = PersonProject.objects.create(person=person, **validated_data)
+        return person_project
 
 
 class ProjectReadSerializer(serializers.ModelSerializer):
@@ -59,7 +96,8 @@ class ProjectReadSerializer(serializers.ModelSerializer):
 class ProjectWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['id', 'name', 'start_date']
+        status = serializers.ChoiceField(Project.StatusChoices.choices, required=False)
+        fields = ['id', 'name', 'start_date', 'status']
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -71,3 +109,53 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
         PersonProject.objects.create(project=project, person=user, role=PersonProject.RoleChoices.ADMIN)
 
         return project
+    
+
+class MemberReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+class MemberWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ['id', 'username']
+
+class PersonProjectWriteSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = PersonProject
+        fields = ['username', 'role']
+
+    def validate(self, data):
+        username = data.get('username')
+        role = data.get('role')
+        project = self.context['view'].get_project_instance()
+
+        # Check if the user already exists in the project
+        if PersonProject.objects.filter(person__username=username, project=project).exists():
+            raise serializers.ValidationError("This user is already a member of the project.")
+
+        # Check if there is already an Admin in the project
+        if role == PersonProject.RoleChoices.ADMIN and PersonProject.objects.filter(project=project, role=PersonProject.RoleChoices.ADMIN).exists():
+            raise serializers.ValidationError("There can only be one Admin in the project.")
+
+        return data
+
+    def create(self, validated_data):
+        username = validated_data.pop('username')
+        try:
+            person = Person.objects.get(username=username)
+        except Person.DoesNotExist:
+            raise serializers.ValidationError({"username": "User with this username does not exist."})
+
+        person_project = PersonProject.objects.create(person=person, **validated_data)
+        return person_project
+
+class PersonProjectReadSerializer(serializers.ModelSerializer):
+    person = MemberReadSerializer()
+
+    class Meta:
+        model = PersonProject
+        fields = ['person', 'role']

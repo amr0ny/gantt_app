@@ -13,3 +13,4 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 AUTH_USER_MODEL = 'gantt.Person'
+LOGIN_URL = '/signin/'

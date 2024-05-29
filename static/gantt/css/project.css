@@ -16,11 +16,22 @@
     cursor: pointer;
 }
 
+.dropdown-menu-project-status {
+    padding: 0;
+}
 .dropdown-menu__item:hover {
     background: #f8f9fa;
     user-select: none;
 }
+.dropdown-menu.dropdown-menu-task.show {
+    display: flex;
+}
 
+
+.dropdown-menu.dropdown-menu-task {
+justify-content: space-evenly;
+width: 240px;
+}
 .project-list-container {
     overflow-y: auto;
     max-height: 400px;
@@ -208,6 +219,32 @@
     background-color: #000;
 }
 
+.js-disabled {
+    opacity: 0.5;
+}
+
 .table-row__item:last-child {
     border-right: none;
+}
+
+
+.members-list-header {
+    background-color: #f8f9fa;
+}
+
+.members-list-header__item {
+    color: #212529;
+    font-weight: 700;
+}
+
+.member-remove-item {
+    cursor: pointer;
+}
+
+.logout-btn {
+    font-size: 12px;
+    position: absolute;
+    bottom: 20px;
+    margin: 0 auto;
+    width: 150px !important;
 }
